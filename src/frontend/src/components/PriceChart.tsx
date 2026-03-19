@@ -99,7 +99,7 @@ export default function PriceChart() {
     >
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-2xl font-bold text-foreground">
-          NBT Price Chart <span className="text-neon-cyan">(USD)</span>
+          DR Price Chart <span className="text-neon-cyan">(USD)</span>
         </h2>
         <div className="flex gap-1" data-ocid="chart.panel">
           {timeframes.map((tf) => (

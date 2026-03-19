@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import AIEcosystem from "./components/AIEcosystem";
 import AdminPanel from "./components/AdminPanel";
 import Footer from "./components/Footer";
 import HeroSection from "./components/HeroSection";
@@ -10,11 +11,16 @@ import MarketOverview from "./components/MarketOverview";
 import MarketStats from "./components/MarketStats";
 import Navbar from "./components/Navbar";
 import PriceChart from "./components/PriceChart";
+import SetupGuide from "./components/SetupGuide";
+import TrendingHolders from "./components/TrendingHolders";
+import WalletPanel from "./components/WalletPanel";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const [adminOpen, setAdminOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
 
   return (
     <div
@@ -30,12 +36,16 @@ function AppContent() {
             ?.scrollIntoView({ behavior: "smooth" })
         }
         onAdminClick={() => setAdminOpen(true)}
+        onWalletClick={() => setWalletOpen(true)}
+        onSetupClick={() => setSetupOpen(true)}
       />
 
       <main>
         <HeroSection />
         <LiveTicker />
         <MarketStats />
+        <TrendingHolders />
+        <AIEcosystem />
         <PriceChart />
         <HowToBuy />
         <MarketOverview />
@@ -43,6 +53,8 @@ function AppContent() {
 
       <Footer onAdminClick={() => setAdminOpen(true)} />
       <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
+      <WalletPanel open={walletOpen} onClose={() => setWalletOpen(false)} />
+      <SetupGuide open={setupOpen} onClose={() => setSetupOpen(false)} />
       <Toaster position="top-right" />
     </div>
   );

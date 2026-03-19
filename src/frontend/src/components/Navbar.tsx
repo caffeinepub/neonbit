@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Settings, X, Zap } from "lucide-react";
+import { BookOpen, Menu, Settings, Wallet, X } from "lucide-react";
 import { useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 interface NavbarProps {
   onGetStarted?: () => void;
   onAdminClick?: () => void;
+  onWalletClick?: () => void;
+  onSetupClick?: () => void;
 }
 
-export default function Navbar({ onGetStarted, onAdminClick }: NavbarProps) {
+export default function Navbar({
+  onGetStarted,
+  onAdminClick,
+  onWalletClick,
+  onSetupClick,
+}: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { login, clear, identity, loginStatus } = useInternetIdentity();
   const isLoggedIn = loginStatus === "success" && !!identity;
@@ -20,9 +27,11 @@ export default function Navbar({ onGetStarted, onAdminClick }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2" data-ocid="nav.link">
-            <div className="w-8 h-8 rounded-lg bg-neon-cyan/20 border border-neon-cyan/40 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-neon-cyan" />
-            </div>
+            <img
+              src="/assets/generated/dr-coin-logo-transparent.dim_200x200.png"
+              alt="@dr logo"
+              className="w-8 h-8 rounded-full object-cover"
+            />
             <span className="font-bold text-lg tracking-wider text-foreground">
               @dr
             </span>
@@ -42,6 +51,28 @@ export default function Navbar({ onGetStarted, onAdminClick }: NavbarProps) {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSetupClick}
+              className="border-border/60 text-muted-foreground hover:text-neon-cyan hover:border-neon-cyan/40 hover:bg-neon-cyan/5 rounded-full px-4 gap-1.5"
+              data-ocid="nav.open_modal_button"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Setup Guide
+            </Button>
+            {isLoggedIn && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onWalletClick}
+                className="border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full px-4 gap-1.5"
+                data-ocid="nav.open_modal_button"
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                Wallet
+              </Button>
+            )}
             {isLoggedIn && (
               <Button
                 variant="outline"
@@ -115,6 +146,34 @@ export default function Navbar({ onGetStarted, onAdminClick }: NavbarProps) {
               </a>
             ))}
             <div className="flex flex-col gap-2 px-4 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onSetupClick?.();
+                  setMobileOpen(false);
+                }}
+                className="border-border/60 text-muted-foreground hover:text-neon-cyan hover:border-neon-cyan/40 rounded-full gap-1.5"
+                data-ocid="nav.open_modal_button"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Setup Guide
+              </Button>
+              {isLoggedIn && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onWalletClick?.();
+                    setMobileOpen(false);
+                  }}
+                  className="border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full gap-1.5"
+                  data-ocid="nav.open_modal_button"
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  Wallet
+                </Button>
+              )}
               {isLoggedIn && (
                 <Button
                   variant="outline"

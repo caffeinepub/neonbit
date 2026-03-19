@@ -1,8 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Activity, TrendingUp } from "lucide-react";
+import { Activity, Brain, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCoinProfile, useMarketStats } from "../hooks/useQueries";
 import { formatPercent, formatPrice } from "../utils/format";
+
+const chainTags = [
+  { label: "BTC", color: "#F7931A" },
+  { label: "ETH", color: "#627EEA" },
+  { label: "SOL", color: "#9945FF" },
+  { label: "AI", color: "#18D6E5" },
+];
 
 export default function HeroSection() {
   const { data: profile } = useCoinProfile();
@@ -47,18 +54,39 @@ export default function HeroSection() {
           <div className="flex items-center gap-8">
             <div className="relative flex-shrink-0">
               <img
-                src="/assets/generated/neonbit-logo-transparent.dim_200x200.png"
+                src="/assets/generated/dr-coin-logo-transparent.dim_200x200.png"
                 alt="@dr Logo"
                 className="w-28 h-28 md:w-36 md:h-36 rounded-full coin-glow object-cover bg-[#141A22]"
               />
             </div>
             <div className="flex flex-col gap-2">
+              {/* AI-Powered badge */}
+              <div className="flex items-center gap-1.5 bg-neon-cyan/10 border border-neon-cyan/30 rounded-full px-3 py-1 w-fit text-xs text-neon-cyan font-semibold">
+                <Brain className="w-3 h-3" />
+                AI-Powered
+              </div>
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
                 {profile?.name ?? "@dr"}
                 <span className="text-neon-cyan ml-3">
                   ({profile?.symbol ?? "DR"})
                 </span>
               </h1>
+              {/* Multi-chain tags */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {chainTags.map((tag) => (
+                  <span
+                    key={tag.label}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: `${tag.color}18`,
+                      color: tag.color,
+                      border: `1px solid ${tag.color}40`,
+                    }}
+                  >
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
               <div
                 className={`text-3xl md:text-4xl font-bold font-mono text-foreground ${priceFlash ? "price-flash" : ""}`}
               >

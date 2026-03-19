@@ -111,6 +111,14 @@ export interface MarketStats {
 export interface UserProfile {
     name: string;
 }
+export interface Transaction {
+    id: bigint;
+    to: Principal;
+    from: Principal;
+    memo: string;
+    timestamp: bigint;
+    amount: bigint;
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -120,16 +128,30 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addPricePoint(pricePoint: PricePoint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    claimInitialAdmin(): Promise<void>;
     clearPriceHistory(): Promise<void>;
+    getBalance(principal: Principal): Promise<bigint>;
+    getCallerBalance(): Promise<bigint>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCoinProfile(): Promise<CoinProfile>;
+    getFixedTotalSupply(): Promise<number>;
+    getFixedTotalSupplyNat(): Promise<bigint>;
     getLatestPricePoint(): Promise<PricePoint | null>;
     getMarketStats(): Promise<MarketStats>;
     getPriceHistory(): Promise<Array<PricePoint>>;
+    getRecentTransactions(): Promise<Array<Transaction>>;
+    getTaxAccount(): Promise<Principal | null>;
+    getTopHolders(limit: bigint): Promise<Array<[Principal, bigint]>>;
+    getTotalMinted(): Promise<bigint>;
+    getTransactionHistory(principal: Principal): Promise<Array<Transaction>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    hasAdminBeenClaimed(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
+    mintTokens(to: Principal, amount: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setTaxAccount(account: Principal): Promise<void>;
+    transfer(to: Principal, amount: bigint): Promise<void>;
     updateCoinProfile(profile: CoinProfile): Promise<void>;
     updateCoinProfileAndMarketStats(profile: CoinProfile, stats: MarketStats): Promise<void>;
     updateMarketStats(stats: MarketStats): Promise<void>;
@@ -179,6 +201,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async claimInitialAdmin(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimInitialAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimInitialAdmin();
+            return result;
+        }
+    }
     async clearPriceHistory(): Promise<void> {
         if (this.processError) {
             try {
@@ -190,6 +226,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.clearPriceHistory();
+            return result;
+        }
+    }
+    async getBalance(arg0: Principal): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getBalance(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getBalance(arg0);
+            return result;
+        }
+    }
+    async getCallerBalance(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCallerBalance();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCallerBalance();
             return result;
         }
     }
@@ -235,6 +299,34 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getFixedTotalSupply(): Promise<number> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getFixedTotalSupply();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getFixedTotalSupply();
+            return result;
+        }
+    }
+    async getFixedTotalSupplyNat(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getFixedTotalSupplyNat();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getFixedTotalSupplyNat();
+            return result;
+        }
+    }
     async getLatestPricePoint(): Promise<PricePoint | null> {
         if (this.processError) {
             try {
@@ -277,6 +369,76 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getRecentTransactions(): Promise<Array<Transaction>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getRecentTransactions();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getRecentTransactions();
+            return result;
+        }
+    }
+    async getTaxAccount(): Promise<Principal | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTaxAccount();
+                return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTaxAccount();
+            return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getTopHolders(arg0: bigint): Promise<Array<[Principal, bigint]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTopHolders(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTopHolders(arg0);
+            return result;
+        }
+    }
+    async getTotalMinted(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTotalMinted();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTotalMinted();
+            return result;
+        }
+    }
+    async getTransactionHistory(arg0: Principal): Promise<Array<Transaction>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTransactionHistory(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTransactionHistory(arg0);
+            return result;
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -289,6 +451,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getUserProfile(arg0);
             return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async hasAdminBeenClaimed(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.hasAdminBeenClaimed();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.hasAdminBeenClaimed();
+            return result;
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -305,6 +481,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async mintTokens(arg0: Principal, arg1: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.mintTokens(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.mintTokens(arg0, arg1);
+            return result;
+        }
+    }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
@@ -316,6 +506,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveCallerUserProfile(arg0);
+            return result;
+        }
+    }
+    async setTaxAccount(arg0: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setTaxAccount(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setTaxAccount(arg0);
+            return result;
+        }
+    }
+    async transfer(arg0: Principal, arg1: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.transfer(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.transfer(arg0, arg1);
             return result;
         }
     }
@@ -369,6 +587,9 @@ function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PricePoint]): PricePoint | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

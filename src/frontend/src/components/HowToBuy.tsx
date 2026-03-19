@@ -7,24 +7,24 @@ const steps = [
     step: "Step 1",
     title: "Create Wallet",
     description:
-      "Download and set up the Neon Wallet to securely store your NBT and other crypto assets. Available on iOS, Android, and as a browser extension.",
-    cta: "Download Neon Wallet",
+      "Download and set up a crypto wallet to securely store your DR and other crypto assets. Available on iOS, Android, and as a browser extension.",
+    cta: "Download Wallet",
   },
   {
     icon: <DollarSign className="w-6 h-6 text-neon-green" />,
     step: "Step 2",
     title: "Get Crypto",
     description:
-      "Purchase ETH or USDT on any major exchange using your credit card, bank transfer, or other payment methods. These will be used to swap for NBT.",
-    cta: "Purchase ETH/USDT",
+      "Purchase BTC, ETH, SOL, or USDT on any major exchange using your credit card, bank transfer, or other payment methods. These will be used to swap for DR.",
+    cta: "Buy BTC/ETH/SOL",
   },
   {
     icon: <ArrowLeftRight className="w-6 h-6 text-neon-cyan" />,
     step: "Step 3",
-    title: "Exchange for NBT",
+    title: "Exchange for DR",
     description:
-      "Use a decentralized exchange (DEX) or centralized exchange (CEX) to swap your ETH/USDT for NEONBIT (NBT) tokens at the best available rate.",
-    cta: "Use DEX/CEX",
+      "Our AI-powered DEX routing automatically finds the best rate across BTC, ETH, and SOL chains. Swap any major coin for @dr with optimal slippage.",
+    cta: "Use AI-DEX Router",
   },
 ];
 
@@ -35,7 +35,7 @@ export default function HowToBuy() {
       id="learn"
     >
       <h2 className="text-2xl font-bold text-foreground mb-8">
-        How to Buy <span className="text-neon-cyan">NEONBIT (NBT)</span>
+        How to Buy <span className="text-neon-cyan">@dr (DR)</span>
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {steps.map((step, i) => (

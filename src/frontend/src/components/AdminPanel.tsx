@@ -9,18 +9,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Loader2, Shield } from "lucide-react";
+import {
+  AlertTriangle,
+  Coins,
+  Crown,
+  Loader2,
+  Lock,
+  Percent,
+  RefreshCw,
+  Shield,
+  User,
+  Zap,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CoinProfile, MarketStats } from "../backend";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
+  useClaimInitialAdmin,
   useCoinProfile,
+  useGetTaxAccount,
+  useHasAdminBeenClaimed,
   useIsAdmin,
   useMarketStats,
+  useMintTokens,
+  useResetAndClaimAdmin,
+  useSetTaxAccount,
+  useTotalMinted,
   useUpdateCoinProfile,
   useUpdateMarketStats,
 } from "../hooks/useQueries";
+
+const FIXED_TOTAL_SUPPLY = 1_000_000_000;
+
+function e8sToDr(e8s: bigint): string {
+  const dr = Number(e8s) / 1e8;
+  return dr.toLocaleString("en-US", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  });
+}
 
 interface AdminPanelProps {
   open: boolean;
@@ -31,34 +59,49 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   const { login, loginStatus, identity } = useInternetIdentity();
   const isLoggedIn = !!identity;
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const { data: adminClaimed, isLoading: claimLoading } =
+    useHasAdminBeenClaimed();
+  const claimAdmin = useClaimInitialAdmin();
+  const resetAndClaim = useResetAndClaimAdmin();
   const { data: profile } = useCoinProfile();
   const { data: stats } = useMarketStats();
+  const { data: totalMinted } = useTotalMinted();
+  const { data: taxAccount, isLoading: taxLoading } = useGetTaxAccount();
   const updateProfile = useUpdateCoinProfile();
   const updateStats = useUpdateMarketStats();
+  const mintTokens = useMintTokens();
+  const setTaxAccount = useSetTaxAccount();
 
   const [profileForm, setProfileForm] = useState<CoinProfile>({
-    name: "NEONBIT",
-    symbol: "NBT",
-    description: "The future of decentralized finance.",
+    name: "@dr",
+    symbol: "DR",
+    description: "@dr is a limited-supply AI-powered coin.",
     logoUrl: "/assets/generated/neonbit-logo-transparent.dim_200x200.png",
   });
 
   const [statsForm, setStatsForm] = useState<MarketStats>({
-    currentPrice: 2.47,
-    priceChange24h: 6.82,
-    marketCap: 247_000_000,
-    volume24h: 18_500_000,
-    circulatingSupply: 100_000_000,
-    totalSupply: 200_000_000,
-    allTimeHigh: 4.89,
+    currentPrice: 0.00125,
+    priceChange24h: -0.05,
+    marketCap: 1_250_000,
+    volume24h: 50_000,
+    circulatingSupply: 1_000_000_000,
+    totalSupply: FIXED_TOTAL_SUPPLY,
+    allTimeHigh: 0.0025,
   });
+
+  const [mintRecipient, setMintRecipient] = useState("");
+  const [mintAmount, setMintAmount] = useState("");
+  const [mintError, setMintError] = useState("");
+
+  const [taxInput, setTaxInput] = useState("");
+  const [taxError, setTaxError] = useState("");
 
   useEffect(() => {
     if (profile) setProfileForm(profile);
   }, [profile]);
 
   useEffect(() => {
-    if (stats) setStatsForm(stats);
+    if (stats) setStatsForm({ ...stats, totalSupply: FIXED_TOTAL_SUPPLY });
   }, [stats]);
 
   const handleSaveProfile = async () => {
@@ -72,10 +115,82 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
 
   const handleSaveStats = async () => {
     try {
-      await updateStats.mutateAsync(statsForm);
+      await updateStats.mutateAsync({
+        ...statsForm,
+        totalSupply: FIXED_TOTAL_SUPPLY,
+      });
       toast.success("Market stats updated successfully!");
     } catch {
       toast.error("Failed to update market stats.");
+    }
+  };
+
+  const handleMint = async () => {
+    setMintError("");
+    if (!mintRecipient.trim()) {
+      setMintError("Recipient principal is required.");
+      return;
+    }
+    const amountNum = Number.parseFloat(mintAmount);
+    if (Number.isNaN(amountNum) || amountNum <= 0) {
+      setMintError("Enter a valid amount.");
+      return;
+    }
+    try {
+      const e8s = BigInt(Math.round(amountNum * 1e8));
+      await mintTokens.mutateAsync({ to: mintRecipient.trim(), amount: e8s });
+      toast.success(
+        `Minted ${amountNum} DR to ${mintRecipient.slice(0, 10)}...`,
+      );
+      setMintRecipient("");
+      setMintAmount("");
+    } catch (err: any) {
+      const msg = err?.message ?? "Mint failed";
+      setMintError(
+        msg.includes("Principal") || msg.includes("principal")
+          ? "Invalid recipient principal address."
+          : msg,
+      );
+    }
+  };
+
+  const handleSetTax = async () => {
+    setTaxError("");
+    if (!taxInput.trim()) {
+      setTaxError("Principal address required.");
+      return;
+    }
+    try {
+      await setTaxAccount.mutateAsync(taxInput.trim());
+      toast.success(
+        "Tax account updated! 3% of every transfer will go to this address.",
+      );
+      setTaxInput("");
+    } catch (err: any) {
+      const msg = err?.message ?? "Failed to set tax account";
+      setTaxError(
+        msg.includes("Principal") || msg.includes("principal")
+          ? "Invalid principal address."
+          : msg,
+      );
+    }
+  };
+
+  const handleClaimAdmin = async () => {
+    try {
+      await claimAdmin.mutateAsync();
+      toast.success("Admin access claimed successfully! Welcome, Admin.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to claim admin access.");
+    }
+  };
+
+  const handleResetAdmin = async () => {
+    try {
+      await resetAndClaim.mutateAsync();
+      toast.success("Admin access reset! You are now the admin.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to reset admin access.");
     }
   };
 
@@ -114,7 +229,7 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               )}
             </Button>
           </div>
-        ) : adminLoading ? (
+        ) : adminLoading || claimLoading ? (
           <div className="flex justify-center py-8">
             <Loader2
               className="w-6 h-6 animate-spin text-neon-cyan"
@@ -122,38 +237,154 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
             />
           </div>
         ) : !isAdmin ? (
-          <div
-            className="flex flex-col items-center gap-4 py-8 text-center"
-            data-ocid="admin.error_state"
-          >
-            <AlertTriangle className="w-10 h-10 text-neon-red" />
-            <p className="text-muted-foreground">
-              You do not have admin privileges.
-            </p>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              data-ocid="admin.cancel_button"
+          adminClaimed === false ? (
+            /* Admin not yet claimed by anyone — show Claim button */
+            <div
+              className="flex flex-col items-center gap-5 py-10 text-center"
+              data-ocid="admin.panel"
             >
-              Close
-            </Button>
-          </div>
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-neon-green/10 border-2 border-neon-green/40 flex items-center justify-center">
+                  <Crown className="w-9 h-9 text-neon-green" />
+                </div>
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neon-green animate-ping opacity-60" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neon-green" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-1">
+                  Claim Admin Access
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Admin access has not been set up yet. You can claim it as the
+                  first admin.
+                </p>
+              </div>
+              <Button
+                onClick={handleClaimAdmin}
+                disabled={claimAdmin.isPending}
+                className="bg-neon-green text-black hover:bg-neon-green/90 font-bold px-8 py-2 gap-2 text-base"
+                data-ocid="admin.primary_button"
+              >
+                {claimAdmin.isPending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Claiming...
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-5 h-5" />
+                    Claim Admin Access
+                  </>
+                )}
+              </Button>
+              {claimAdmin.isError && (
+                <p
+                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2"
+                  data-ocid="admin.error_state"
+                >
+                  {(claimAdmin.error as any)?.message ??
+                    "Failed to claim admin."}
+                </p>
+              )}
+            </div>
+          ) : (
+            /* Admin already claimed — show recovery UI */
+            <div
+              className="flex flex-col items-center gap-5 py-8 text-center"
+              data-ocid="admin.panel"
+            >
+              <div className="w-16 h-16 rounded-full bg-amber-400/10 border-2 border-amber-400/40 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-amber-400" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  Admin Access Required
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  You are logged in but do not have admin privileges.
+                </p>
+                <p className="text-sm text-muted-foreground max-w-sm mt-2">
+                  If you are the app owner, use{" "}
+                  <span className="text-amber-400 font-semibold">
+                    "Reset &amp; Reclaim Admin"
+                  </span>{" "}
+                  to take back admin access. This will remove the current admin
+                  and make you the new admin.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 w-full max-w-xs">
+                <Button
+                  onClick={handleResetAdmin}
+                  disabled={resetAndClaim.isPending}
+                  className="bg-amber-400 text-black hover:bg-amber-400/90 font-bold w-full gap-2"
+                  data-ocid="admin.primary_button"
+                >
+                  {resetAndClaim.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Reset &amp; Reclaim Admin
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="w-full"
+                  data-ocid="admin.cancel_button"
+                >
+                  Close
+                </Button>
+              </div>
+
+              {resetAndClaim.isError && (
+                <p
+                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2 w-full max-w-xs"
+                  data-ocid="admin.error_state"
+                >
+                  {(resetAndClaim.error as any)?.message ??
+                    "Failed to reset admin access."}
+                </p>
+              )}
+            </div>
+          )
         ) : (
           <Tabs defaultValue="profile">
-            <TabsList className="bg-secondary border border-border w-full">
+            <TabsList className="bg-secondary border border-border w-full flex flex-wrap h-auto gap-1 p-1">
               <TabsTrigger
                 value="profile"
-                className="flex-1 data-[state=active]:bg-neon-cyan/20 data-[state=active]:text-neon-cyan"
+                className="flex-1 data-[state=active]:bg-neon-cyan/20 data-[state=active]:text-neon-cyan text-xs"
                 data-ocid="admin.tab"
               >
                 Coin Profile
               </TabsTrigger>
               <TabsTrigger
                 value="stats"
-                className="flex-1 data-[state=active]:bg-neon-cyan/20 data-[state=active]:text-neon-cyan"
+                className="flex-1 data-[state=active]:bg-neon-cyan/20 data-[state=active]:text-neon-cyan text-xs"
                 data-ocid="admin.tab"
               >
                 Market Stats
+              </TabsTrigger>
+              <TabsTrigger
+                value="mint"
+                className="flex-1 data-[state=active]:bg-neon-green/20 data-[state=active]:text-neon-green text-xs"
+                data-ocid="admin.tab"
+              >
+                Mint Tokens
+              </TabsTrigger>
+              <TabsTrigger
+                value="tax"
+                className="flex-1 data-[state=active]:bg-amber-400/20 data-[state=active]:text-amber-400 text-xs"
+                data-ocid="admin.tab"
+              >
+                Tax Settings
               </TabsTrigger>
             </TabsList>
 
@@ -233,6 +464,13 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
             </TabsContent>
 
             <TabsContent value="stats" className="mt-4 flex flex-col gap-4">
+              <div className="flex items-center gap-2 bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg px-3 py-2">
+                <Lock className="w-4 h-4 text-neon-cyan flex-shrink-0" />
+                <span className="text-xs text-neon-cyan font-semibold">
+                  Total Supply is permanently locked at 1,000,000,000 DR coins.
+                  This cannot be changed.
+                </span>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
@@ -241,7 +479,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                     { key: "marketCap", label: "Market Cap ($)" },
                     { key: "volume24h", label: "24h Volume ($)" },
                     { key: "circulatingSupply", label: "Circulating Supply" },
-                    { key: "totalSupply", label: "Total Supply" },
                     { key: "allTimeHigh", label: "All-Time High ($)" },
                   ] as { key: keyof MarketStats; label: string }[]
                 ).map(({ key, label }) => (
@@ -263,6 +500,18 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                     />
                   </div>
                 ))}
+                <div className="col-span-2">
+                  <Label className="text-muted-foreground text-xs mb-1 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-neon-cyan" />
+                    Total Supply (Locked)
+                  </Label>
+                  <Input
+                    type="text"
+                    value="1,000,000,000"
+                    disabled
+                    className="bg-neon-cyan/5 border-neon-cyan/30 text-neon-cyan font-bold cursor-not-allowed"
+                  />
+                </div>
               </div>
               <Button
                 onClick={handleSaveStats}
@@ -277,6 +526,177 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                   </>
                 ) : (
                   "Save Stats"
+                )}
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="mint" className="mt-4 flex flex-col gap-4">
+              {/* Total minted info */}
+              <div className="flex items-center gap-3 rounded-xl bg-neon-green/10 border border-neon-green/30 px-4 py-3">
+                <Coins className="w-5 h-5 text-neon-green flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Total Minted So Far
+                  </p>
+                  <p className="text-lg font-bold text-neon-green font-mono">
+                    {totalMinted !== undefined ? e8sToDr(totalMinted) : "..."}{" "}
+                    DR
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">
+                  Recipient Principal
+                </Label>
+                <Input
+                  placeholder="Principal ID of recipient"
+                  value={mintRecipient}
+                  onChange={(e) => setMintRecipient(e.target.value)}
+                  className="bg-input border-border text-foreground font-mono text-sm"
+                  data-ocid="admin.input"
+                />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">
+                  Amount to Mint (DR)
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 1000"
+                  min="0"
+                  step="1"
+                  value={mintAmount}
+                  onChange={(e) => setMintAmount(e.target.value)}
+                  className="bg-input border-border text-foreground"
+                  data-ocid="admin.input"
+                />
+              </div>
+
+              {mintError && (
+                <p
+                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-3 py-2"
+                  data-ocid="admin.error_state"
+                >
+                  {mintError}
+                </p>
+              )}
+
+              <Button
+                onClick={handleMint}
+                disabled={mintTokens.isPending}
+                className="bg-neon-green text-black hover:bg-neon-green/90 font-bold w-full gap-2"
+                data-ocid="admin.submit_button"
+              >
+                {mintTokens.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Minting...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    Mint DR Tokens
+                  </>
+                )}
+              </Button>
+            </TabsContent>
+
+            {/* ── Tax Settings Tab ── */}
+            <TabsContent value="tax" className="mt-4 flex flex-col gap-4">
+              {/* Info banner */}
+              <div className="flex items-start gap-3 rounded-xl bg-amber-400/10 border border-amber-400/30 px-4 py-3">
+                <Percent className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-400">
+                    3% Transfer Tax
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Har coin transfer par automatically 3% tax aapke designated
+                    account mein aayega. Remaining 97% recipient ko milega.
+                  </p>
+                </div>
+              </div>
+
+              {/* Current tax account */}
+              <div className="rounded-lg border border-border bg-secondary/40 px-4 py-3">
+                <p className="text-xs text-muted-foreground mb-1">
+                  Current Tax Account
+                </p>
+                {taxLoading ? (
+                  <div
+                    className="flex items-center gap-2"
+                    data-ocid="admin.loading_state"
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    <span className="text-sm text-muted-foreground">
+                      Loading...
+                    </span>
+                  </div>
+                ) : taxAccount ? (
+                  <p className="text-sm font-mono text-amber-400 break-all">
+                    {taxAccount}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground/60 italic">
+                    Not set yet
+                  </p>
+                )}
+              </div>
+
+              {/* Set tax account */}
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">
+                  New Tax Account Principal
+                </Label>
+                <Input
+                  placeholder="Principal ID e.g. aaaaa-aa or rrkah-fqaaa-..."
+                  value={taxInput}
+                  onChange={(e) => setTaxInput(e.target.value)}
+                  className="bg-input border-border text-foreground font-mono text-sm"
+                  data-ocid="admin.input"
+                />
+              </div>
+
+              {/* Use my principal button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setTaxInput(identity?.getPrincipal().toString() ?? "")
+                }
+                className="border-amber-400/40 text-amber-400 hover:bg-amber-400/10 gap-2 w-full"
+                data-ocid="admin.secondary_button"
+              >
+                <User className="w-4 h-4" />
+                Use My Principal as Tax Account
+              </Button>
+
+              {taxError && (
+                <p
+                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-3 py-2"
+                  data-ocid="admin.error_state"
+                >
+                  {taxError}
+                </p>
+              )}
+
+              <Button
+                onClick={handleSetTax}
+                disabled={setTaxAccount.isPending}
+                className="bg-amber-400 text-black hover:bg-amber-400/90 font-bold w-full gap-2"
+                data-ocid="admin.submit_button"
+              >
+                {setTaxAccount.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Percent className="w-4 h-4" />
+                    Set Tax Account
+                  </>
                 )}
               </Button>
             </TabsContent>

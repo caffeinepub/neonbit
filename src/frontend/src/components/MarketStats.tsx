@@ -3,16 +3,12 @@ import {
   BarChart3,
   DollarSign,
   Layers,
+  Lock,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import { useMarketStats } from "../hooks/useQueries";
-import {
-  formatLargeNumber,
-  formatPercent,
-  formatPrice,
-  formatSupply,
-} from "../utils/format";
+import { formatLargeNumber, formatPercent, formatPrice } from "../utils/format";
 
 interface StatCardProps {
   label: string;
@@ -21,6 +17,7 @@ interface StatCardProps {
   subPositive: boolean;
   icon: React.ReactNode;
   delay: number;
+  locked?: boolean;
 }
 
 function StatCard({
@@ -30,6 +27,7 @@ function StatCard({
   subPositive,
   icon,
   delay,
+  locked,
 }: StatCardProps) {
   return (
     <div
@@ -40,7 +38,10 @@ function StatCard({
         <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
           {label}
         </span>
-        <div className="text-neon-cyan/60">{icon}</div>
+        <div className="flex items-center gap-1">
+          {locked && <Lock className="w-3 h-3 text-neon-cyan/60" />}
+          <div className="text-neon-cyan/60">{icon}</div>
+        </div>
       </div>
       <div className="text-2xl font-bold text-foreground">{value}</div>
       <div
@@ -61,13 +62,13 @@ export default function MarketStats() {
   const { data: stats } = useMarketStats();
 
   const s = stats ?? {
-    currentPrice: 2.47,
-    marketCap: 247_000_000,
-    volume24h: 18_500_000,
-    circulatingSupply: 100_000_000,
-    totalSupply: 200_000_000,
-    allTimeHigh: 4.89,
-    priceChange24h: 6.82,
+    currentPrice: 0.00125,
+    marketCap: 1_250_000,
+    volume24h: 50_000,
+    circulatingSupply: 1_000_000_000,
+    totalSupply: 1_000_000_000,
+    allTimeHigh: 0.0025,
+    priceChange24h: -0.05,
   };
 
   const cards = [
@@ -88,12 +89,13 @@ export default function MarketStats() {
       delay: 100,
     },
     {
-      label: "Circulating Supply",
-      value: `${formatSupply(s.circulatingSupply)} NBT`,
-      subValue: `${((s.circulatingSupply / s.totalSupply) * 100).toFixed(1)}% of total`,
+      label: "Total Supply (Fixed)",
+      value: "1B DR",
+      subValue: "1,000,000,000 -- Hard Cap",
       subPositive: true,
       icon: <Layers className="w-4 h-4" />,
       delay: 200,
+      locked: true,
     },
     {
       label: "All-Time High",
@@ -107,9 +109,15 @@ export default function MarketStats() {
 
   return (
     <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 className="text-2xl font-bold text-foreground mb-6">
-        Market Statistics <span className="text-neon-cyan">(NBT)</span>
-      </h2>
+      <div className="flex items-center gap-3 mb-6">
+        <h2 className="text-2xl font-bold text-foreground">
+          Market Statistics <span className="text-neon-cyan">(DR)</span>
+        </h2>
+        <span className="flex items-center gap-1 text-xs bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan px-2 py-1 rounded-full font-semibold">
+          <Lock className="w-3 h-3" />
+          1B Hard Cap
+        </span>
+      </div>
       <div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         data-ocid="stats.panel"
