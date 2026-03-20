@@ -115,7 +115,7 @@ export function useGetTaxAccount() {
     queryFn: async () => {
       if (!actor) return null;
       try {
-        const result = await (actor as any).getTaxAccount();
+        const result = await actor.getTaxAccount();
         if (result === undefined || result === null) return null;
         return result.toString();
       } catch {
@@ -134,7 +134,7 @@ export function useSetTaxAccount() {
       if (!actor) throw new Error("Not connected");
       const { Principal } = await import("@icp-sdk/core/principal");
       const p = Principal.fromText(principal);
-      await (actor as any).setTaxAccount(p);
+      await actor.setTaxAccount(p);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["taxAccount"] });
@@ -213,7 +213,7 @@ export function useHasAdminBeenClaimed() {
     queryFn: async () => {
       if (!actor) return false;
       try {
-        return await (actor as any).hasAdminBeenClaimed();
+        return await actor.hasAdminBeenClaimed();
       } catch {
         return false;
       }
@@ -228,7 +228,7 @@ export function useClaimInitialAdmin() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).claimInitialAdmin();
+      await actor.claimInitialAdmin();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
@@ -243,7 +243,7 @@ export function useResetAndClaimAdmin() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).resetAndClaimAdmin();
+      await actor.resetAndClaimAdmin();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["isAdmin"] });

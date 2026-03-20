@@ -129,6 +129,7 @@ export interface backendInterface {
     addPricePoint(pricePoint: PricePoint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     claimInitialAdmin(): Promise<void>;
+    resetAndClaimAdmin(): Promise<void>;
     clearPriceHistory(): Promise<void>;
     getBalance(principal: Principal): Promise<bigint>;
     getCallerBalance(): Promise<bigint>;
@@ -212,6 +213,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.claimInitialAdmin();
+            return result;
+        }
+    }
+    async resetAndClaimAdmin(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.resetAndClaimAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.resetAndClaimAdmin();
             return result;
         }
     }

@@ -16,7 +16,6 @@ import {
   Loader2,
   Lock,
   Percent,
-  RefreshCw,
   Shield,
   User,
   Zap,
@@ -33,7 +32,6 @@ import {
   useIsAdmin,
   useMarketStats,
   useMintTokens,
-  useResetAndClaimAdmin,
   useSetTaxAccount,
   useTotalMinted,
   useUpdateCoinProfile,
@@ -62,7 +60,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   const { data: adminClaimed, isLoading: claimLoading } =
     useHasAdminBeenClaimed();
   const claimAdmin = useClaimInitialAdmin();
-  const resetAndClaim = useResetAndClaimAdmin();
   const { data: profile } = useCoinProfile();
   const { data: stats } = useMarketStats();
   const { data: totalMinted } = useTotalMinted();
@@ -185,15 +182,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
     }
   };
 
-  const handleResetAdmin = async () => {
-    try {
-      await resetAndClaim.mutateAsync();
-      toast.success("Admin access reset! You are now the admin.");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to reset admin access.");
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
@@ -288,71 +276,31 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               )}
             </div>
           ) : (
-            /* Admin already claimed — show recovery UI */
+            /* Admin already claimed — show simple access denied message */
             <div
               className="flex flex-col items-center gap-5 py-8 text-center"
               data-ocid="admin.panel"
             >
-              <div className="w-16 h-16 rounded-full bg-amber-400/10 border-2 border-amber-400/40 flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-amber-400" />
+              <div className="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500/40 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-red-400" />
               </div>
-
               <div>
                 <h3 className="text-lg font-bold text-foreground mb-2">
                   Admin Access Required
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  You are logged in but do not have admin privileges.
-                </p>
-                <p className="text-sm text-muted-foreground max-w-sm mt-2">
-                  If you are the app owner, use{" "}
-                  <span className="text-amber-400 font-semibold">
-                    "Reset &amp; Reclaim Admin"
-                  </span>{" "}
-                  to take back admin access. This will remove the current admin
-                  and make you the new admin.
+                  You do not have admin privileges. Please contact the app
+                  owner.
                 </p>
               </div>
-
-              <div className="flex flex-col gap-3 w-full max-w-xs">
-                <Button
-                  onClick={handleResetAdmin}
-                  disabled={resetAndClaim.isPending}
-                  className="bg-amber-400 text-black hover:bg-amber-400/90 font-bold w-full gap-2"
-                  data-ocid="admin.primary_button"
-                >
-                  {resetAndClaim.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Resetting...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4" />
-                      Reset &amp; Reclaim Admin
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  className="w-full"
-                  data-ocid="admin.cancel_button"
-                >
-                  Close
-                </Button>
-              </div>
-
-              {resetAndClaim.isError && (
-                <p
-                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2 w-full max-w-xs"
-                  data-ocid="admin.error_state"
-                >
-                  {(resetAndClaim.error as any)?.message ??
-                    "Failed to reset admin access."}
-                </p>
-              )}
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full max-w-xs"
+                data-ocid="admin.close_button"
+              >
+                Close
+              </Button>
             </div>
           )
         ) : (

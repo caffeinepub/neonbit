@@ -46,6 +46,7 @@ export interface backendInterface {
     addPricePoint(pricePoint: PricePoint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     claimInitialAdmin(): Promise<void>;
+    resetAndClaimAdmin(): Promise<void>;
     clearPriceHistory(): Promise<void>;
     getBalance(principal: Principal): Promise<bigint>;
     getCallerBalance(): Promise<bigint>;
