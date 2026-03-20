@@ -19,23 +19,25 @@ actor {
   public type UserProfile = { name : Text };
   let userProfiles = Map.empty<Principal, UserProfile>();
 
-  // Anyone can call this ONCE to become the first admin, if no admin exists yet.
+  // Any logged-in user can call this to become admin (works every time).
   public shared ({ caller }) func claimInitialAdmin() : async () {
-    if (accessControlState.adminAssigned) Runtime.trap("Admin already claimed");
     if (caller.isAnonymous()) Runtime.trap("Must be logged in");
+    // Clear previous admin roles and set caller as admin
+    accessControlState.userRoles.clear();
     accessControlState.userRoles.add(caller, #admin);
     accessControlState.adminAssigned := true;
   };
 
-  // Reset admin state and claim for the caller (recovery function)
-  public shared ({ caller }) func resetAndClaimAdmin() : async () {
+  // Register self as a user (for token holding and transfers)
+  public shared ({ caller }) func registerUser() : async () {
     if (caller.isAnonymous()) Runtime.trap("Must be logged in");
-    // Clear all existing admin roles
-    accessControlState.userRoles.clear();
-    accessControlState.adminAssigned := false;
-    // Now claim for caller
-    accessControlState.userRoles.add(caller, #admin);
-    accessControlState.adminAssigned := true;
+    // Only register if not already admin
+    switch (accessControlState.userRoles.get(caller)) {
+      case (?#admin) {}; // Keep admin role
+      case (_) {
+        accessControlState.userRoles.add(caller, #user);
+      };
+    };
   };
 
   // Returns whether the initial admin slot has been taken
@@ -44,7 +46,6 @@ actor {
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) Runtime.trap("Unauthorized");
     userProfiles.get(caller);
   };
 
@@ -54,7 +55,7 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) Runtime.trap("Unauthorized");
+    if (caller.isAnonymous()) Runtime.trap("Must be logged in");
     userProfiles.add(caller, profile);
   };
 
@@ -186,8 +187,9 @@ actor {
   };
 
   public shared ({ caller }) func transfer(to : Principal, amount : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can transfer tokens");
+    // Any logged-in (non-anonymous) user can transfer
+    if (caller.isAnonymous()) {
+      Runtime.trap("Must be logged in to transfer tokens");
     };
     if (amount == 0) Runtime.trap("Amount must be greater than 0");
 
@@ -255,6 +257,7 @@ actor {
     };
   };
 
+  // Any logged-in user can check their own balance
   public query ({ caller }) func getCallerBalance() : async Nat {
     switch (balances.get(caller)) {
       case (null) { 0 };

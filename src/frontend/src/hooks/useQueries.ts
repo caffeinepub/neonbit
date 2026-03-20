@@ -251,3 +251,14 @@ export function useResetAndClaimAdmin() {
     },
   });
 }
+
+export function useRegisterUser() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      // registerUser is available in backend but may not be in generated types
+      await (actor as any).registerUser();
+    },
+  });
+}

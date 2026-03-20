@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { BookOpen, Menu, Settings, Wallet, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 interface NavbarProps {
@@ -18,7 +19,23 @@ export default function Navbar({
 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { login, clear, identity, loginStatus } = useInternetIdentity();
+  const { actor } = useActor();
   const isLoggedIn = loginStatus === "success" && !!identity;
+  const registeredRef = useRef(false);
+
+  // Silently register user after login so transfers work
+  useEffect(() => {
+    if (isLoggedIn && actor && !registeredRef.current) {
+      registeredRef.current = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (actor as any).registerUser?.().catch(() => {
+        // Silent fail - registration is best-effort
+      });
+    }
+    if (!isLoggedIn) {
+      registeredRef.current = false;
+    }
+  }, [isLoggedIn, actor]);
 
   const navLinks = ["Explore", "Tracker", "Learn", "Community"];
 

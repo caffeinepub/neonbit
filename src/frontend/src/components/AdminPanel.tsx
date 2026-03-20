@@ -13,6 +13,9 @@ import {
   AlertTriangle,
   Coins,
   Crown,
+  Eye,
+  EyeOff,
+  KeyRound,
   Loader2,
   Lock,
   Percent,
@@ -28,7 +31,6 @@ import {
   useClaimInitialAdmin,
   useCoinProfile,
   useGetTaxAccount,
-  useHasAdminBeenClaimed,
   useIsAdmin,
   useMarketStats,
   useMintTokens,
@@ -39,6 +41,12 @@ import {
 } from "../hooks/useQueries";
 
 const FIXED_TOTAL_SUPPLY = 1_000_000_000;
+const ADMIN_PASSWORD_KEY = "neonbit_admin_pw";
+const DEFAULT_PASSWORD = "admin123";
+
+function getStoredPassword(): string {
+  return localStorage.getItem(ADMIN_PASSWORD_KEY) ?? DEFAULT_PASSWORD;
+}
 
 function e8sToDr(e8s: bigint): string {
   const dr = Number(e8s) / 1e8;
@@ -56,9 +64,11 @@ interface AdminPanelProps {
 export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   const { login, loginStatus, identity } = useInternetIdentity();
   const isLoggedIn = !!identity;
-  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
-  const { data: adminClaimed, isLoading: claimLoading } =
-    useHasAdminBeenClaimed();
+  const {
+    data: isAdmin,
+    isLoading: adminLoading,
+    refetch: refetchAdmin,
+  } = useIsAdmin();
   const claimAdmin = useClaimInitialAdmin();
   const { data: profile } = useCoinProfile();
   const { data: stats } = useMarketStats();
@@ -68,6 +78,17 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   const updateStats = useUpdateMarketStats();
   const mintTokens = useMintTokens();
   const setTaxAccount = useSetTaxAccount();
+
+  // Password gate state
+  const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Change password state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
 
   const [profileForm, setProfileForm] = useState<CoinProfile>({
     name: "@dr",
@@ -93,6 +114,15 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   const [taxInput, setTaxInput] = useState("");
   const [taxError, setTaxError] = useState("");
 
+  // Reset password unlock when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setPasswordUnlocked(false);
+      setPasswordInput("");
+      setPasswordError("");
+    }
+  }, [open]);
+
   useEffect(() => {
     if (profile) setProfileForm(profile);
   }, [profile]);
@@ -100,6 +130,35 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   useEffect(() => {
     if (stats) setStatsForm({ ...stats, totalSupply: FIXED_TOTAL_SUPPLY });
   }, [stats]);
+
+  const handlePasswordSubmit = () => {
+    if (passwordInput === getStoredPassword()) {
+      setPasswordUnlocked(true);
+      setPasswordError("");
+      setPasswordInput("");
+    } else {
+      setPasswordError("Galat password hai. Dobara try karein.");
+    }
+  };
+
+  const handleChangePassword = () => {
+    if (!newPassword.trim()) {
+      toast.error("Naya password enter karein.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords match nahi kar rahe.");
+      return;
+    }
+    if (newPassword.length < 4) {
+      toast.error("Password kam se kam 4 characters ka hona chahiye.");
+      return;
+    }
+    localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword);
+    setNewPassword("");
+    setConfirmPassword("");
+    toast.success("Password successfully change ho gaya!");
+  };
 
   const handleSaveProfile = async () => {
     try {
@@ -141,8 +200,8 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
       );
       setMintRecipient("");
       setMintAmount("");
-    } catch (err: any) {
-      const msg = err?.message ?? "Mint failed";
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? "Mint failed";
       setMintError(
         msg.includes("Principal") || msg.includes("principal")
           ? "Invalid recipient principal address."
@@ -163,8 +222,9 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
         "Tax account updated! 3% of every transfer will go to this address.",
       );
       setTaxInput("");
-    } catch (err: any) {
-      const msg = err?.message ?? "Failed to set tax account";
+    } catch (err: unknown) {
+      const msg =
+        (err as { message?: string })?.message ?? "Failed to set tax account";
       setTaxError(
         msg.includes("Principal") || msg.includes("principal")
           ? "Invalid principal address."
@@ -176,9 +236,13 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
   const handleClaimAdmin = async () => {
     try {
       await claimAdmin.mutateAsync();
-      toast.success("Admin access claimed successfully! Welcome, Admin.");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to claim admin access.");
+      toast.success("Admin access claimed! Welcome, Admin.");
+      await refetchAdmin();
+    } catch (err: unknown) {
+      toast.error(
+        (err as { message?: string })?.message ??
+          "Failed to claim admin access.",
+      );
     }
   };
 
@@ -195,7 +259,69 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
           </DialogTitle>
         </DialogHeader>
 
-        {!isLoggedIn ? (
+        {/* PASSWORD GATE */}
+        {!passwordUnlocked ? (
+          <div className="flex flex-col items-center gap-5 py-8 text-center">
+            <div className="w-20 h-20 rounded-full bg-neon-cyan/10 border-2 border-neon-cyan/40 flex items-center justify-center">
+              <KeyRound className="w-9 h-9 text-neon-cyan" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground mb-1">
+                Admin Password
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Control Panel access ke liye password darj karein.
+              </p>
+            </div>
+            <div className="w-full max-w-xs flex flex-col gap-3">
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password enter karein..."
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value);
+                    setPasswordError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
+                  className="bg-input border-border text-foreground pr-10"
+                  data-ocid="admin.input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              {passwordError && (
+                <p
+                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-3 py-2"
+                  data-ocid="admin.error_state"
+                >
+                  {passwordError}
+                </p>
+              )}
+              <Button
+                onClick={handlePasswordSubmit}
+                className="bg-neon-cyan text-black hover:bg-neon-cyan/90 font-bold w-full gap-2"
+                data-ocid="admin.primary_button"
+              >
+                <Lock className="w-4 h-4" />
+                Unlock
+              </Button>
+              <p className="text-xs text-muted-foreground/60">
+                Default password:{" "}
+                <span className="font-mono text-neon-cyan/70">admin123</span>
+              </p>
+            </div>
+          </div>
+        ) : !isLoggedIn ? (
           <div className="flex flex-col items-center gap-4 py-8 text-center">
             <AlertTriangle className="w-10 h-10 text-neon-cyan" />
             <p className="text-muted-foreground">
@@ -217,7 +343,7 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               )}
             </Button>
           </div>
-        ) : adminLoading || claimLoading ? (
+        ) : adminLoading ? (
           <div className="flex justify-center py-8">
             <Loader2
               className="w-6 h-6 animate-spin text-neon-cyan"
@@ -225,84 +351,53 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
             />
           </div>
         ) : !isAdmin ? (
-          adminClaimed === false ? (
-            /* Admin not yet claimed by anyone — show Claim button */
-            <div
-              className="flex flex-col items-center gap-5 py-10 text-center"
-              data-ocid="admin.panel"
-            >
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-neon-green/10 border-2 border-neon-green/40 flex items-center justify-center">
-                  <Crown className="w-9 h-9 text-neon-green" />
-                </div>
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neon-green animate-ping opacity-60" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neon-green" />
+          <div
+            className="flex flex-col items-center gap-5 py-10 text-center"
+            data-ocid="admin.panel"
+          >
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-neon-green/10 border-2 border-neon-green/40 flex items-center justify-center">
+                <Crown className="w-9 h-9 text-neon-green" />
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neon-green animate-ping opacity-60" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neon-green" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground mb-1">
+                Claim Admin Access
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Press the button below to claim admin access for your account.
+              </p>
+            </div>
+            <Button
+              onClick={handleClaimAdmin}
+              disabled={claimAdmin.isPending}
+              className="bg-neon-green text-black hover:bg-neon-green/90 font-bold px-8 py-2 gap-2 text-base"
+              data-ocid="admin.primary_button"
+            >
+              {claimAdmin.isPending ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Claiming...
+                </>
+              ) : (
+                <>
+                  <Crown className="w-5 h-5" />
                   Claim Admin Access
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Admin access has not been set up yet. You can claim it as the
-                  first admin.
-                </p>
-              </div>
-              <Button
-                onClick={handleClaimAdmin}
-                disabled={claimAdmin.isPending}
-                className="bg-neon-green text-black hover:bg-neon-green/90 font-bold px-8 py-2 gap-2 text-base"
-                data-ocid="admin.primary_button"
-              >
-                {claimAdmin.isPending ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Claiming...
-                  </>
-                ) : (
-                  <>
-                    <Crown className="w-5 h-5" />
-                    Claim Admin Access
-                  </>
-                )}
-              </Button>
-              {claimAdmin.isError && (
-                <p
-                  className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2"
-                  data-ocid="admin.error_state"
-                >
-                  {(claimAdmin.error as any)?.message ??
-                    "Failed to claim admin."}
-                </p>
+                </>
               )}
-            </div>
-          ) : (
-            /* Admin already claimed — show simple access denied message */
-            <div
-              className="flex flex-col items-center gap-5 py-8 text-center"
-              data-ocid="admin.panel"
-            >
-              <div className="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500/40 flex items-center justify-center">
-                <Lock className="w-8 h-8 text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-2">
-                  Admin Access Required
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  You do not have admin privileges. Please contact the app
-                  owner.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="w-full max-w-xs"
-                data-ocid="admin.close_button"
+            </Button>
+            {claimAdmin.isError && (
+              <p
+                className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2"
+                data-ocid="admin.error_state"
               >
-                Close
-              </Button>
-            </div>
-          )
+                {(claimAdmin.error as { message?: string })?.message ??
+                  "Failed to claim admin."}
+              </p>
+            )}
+          </div>
         ) : (
           <Tabs defaultValue="profile">
             <TabsList className="bg-secondary border border-border w-full flex flex-wrap h-auto gap-1 p-1">
@@ -333,6 +428,13 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 data-ocid="admin.tab"
               >
                 Tax Settings
+              </TabsTrigger>
+              <TabsTrigger
+                value="security"
+                className="flex-1 data-[state=active]:bg-red-400/20 data-[state=active]:text-red-400 text-xs"
+                data-ocid="admin.tab"
+              >
+                Security
               </TabsTrigger>
             </TabsList>
 
@@ -479,7 +581,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
             </TabsContent>
 
             <TabsContent value="mint" className="mt-4 flex flex-col gap-4">
-              {/* Total minted info */}
               <div className="flex items-center gap-3 rounded-xl bg-neon-green/10 border border-neon-green/30 px-4 py-3">
                 <Coins className="w-5 h-5 text-neon-green flex-shrink-0" />
                 <div>
@@ -550,9 +651,7 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               </Button>
             </TabsContent>
 
-            {/* ── Tax Settings Tab ── */}
             <TabsContent value="tax" className="mt-4 flex flex-col gap-4">
-              {/* Info banner */}
               <div className="flex items-start gap-3 rounded-xl bg-amber-400/10 border border-amber-400/30 px-4 py-3">
                 <Percent className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
@@ -566,7 +665,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 </div>
               </div>
 
-              {/* Current tax account */}
               <div className="rounded-lg border border-border bg-secondary/40 px-4 py-3">
                 <p className="text-xs text-muted-foreground mb-1">
                   Current Tax Account
@@ -592,7 +690,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 )}
               </div>
 
-              {/* Set tax account */}
               <div>
                 <Label className="text-muted-foreground text-xs mb-1.5 block">
                   New Tax Account Principal
@@ -606,7 +703,6 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 />
               </div>
 
-              {/* Use my principal button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -646,6 +742,72 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                     Set Tax Account
                   </>
                 )}
+              </Button>
+            </TabsContent>
+
+            {/* SECURITY TAB - Change Password */}
+            <TabsContent value="security" className="mt-4 flex flex-col gap-4">
+              <div className="flex items-start gap-3 rounded-xl bg-red-400/10 border border-red-400/30 px-4 py-3">
+                <KeyRound className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-400">
+                    Admin Panel Password
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Yeh password har baar Control Panel kholne par maanga
+                    jaayega. Ise safe jagah save karein.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">
+                  Naya Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showNewPw ? "text" : "password"}
+                    placeholder="Naya password darj karein"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="bg-input border-border text-foreground pr-10"
+                    data-ocid="admin.input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPw(!showNewPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showNewPw ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">
+                  Password Confirm Karein
+                </Label>
+                <Input
+                  type="password"
+                  placeholder="Wahi password dobara darj karein"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-input border-border text-foreground"
+                  data-ocid="admin.input"
+                />
+              </div>
+
+              <Button
+                onClick={handleChangePassword}
+                className="bg-red-500 text-white hover:bg-red-500/90 font-bold w-full gap-2"
+                data-ocid="admin.submit_button"
+              >
+                <KeyRound className="w-4 h-4" />
+                Password Change Karein
               </Button>
             </TabsContent>
           </Tabs>
