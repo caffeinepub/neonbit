@@ -7,15 +7,8 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface PricePoint {
-    timestamp: bigint;
-    price: number;
-}
-export interface CoinProfile {
+export interface UserProfile {
     name: string;
-    description: string;
-    logoUrl: string;
-    symbol: string;
 }
 export interface MarketStats {
     currentPrice: number;
@@ -26,8 +19,22 @@ export interface MarketStats {
     priceChange24h: number;
     allTimeHigh: number;
 }
-export interface UserProfile {
+export interface PricePoint {
+    timestamp: bigint;
+    price: number;
+}
+export interface CoinProfile {
     name: string;
+    description: string;
+    logoUrl: string;
+    symbol: string;
+}
+export interface UserStats {
+    principal: Principal;
+    totalReceived: bigint;
+    balance: bigint;
+    totalSent: bigint;
+    transferCount: bigint;
 }
 export interface Transaction {
     id: bigint;
@@ -46,8 +53,8 @@ export interface backendInterface {
     addPricePoint(pricePoint: PricePoint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     claimInitialAdmin(): Promise<void>;
-    registerUser(): Promise<void>;
     clearPriceHistory(): Promise<void>;
+    getAllUserStats(): Promise<Array<UserStats>>;
     getBalance(principal: Principal): Promise<bigint>;
     getCallerBalance(): Promise<bigint>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -67,6 +74,7 @@ export interface backendInterface {
     hasAdminBeenClaimed(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     mintTokens(to: Principal, amount: bigint): Promise<void>;
+    registerUser(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setTaxAccount(account: Principal): Promise<void>;
     transfer(to: Principal, amount: bigint): Promise<void>;

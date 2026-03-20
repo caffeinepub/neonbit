@@ -89,15 +89,8 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface PricePoint {
-    timestamp: bigint;
-    price: number;
-}
-export interface CoinProfile {
+export interface UserProfile {
     name: string;
-    description: string;
-    logoUrl: string;
-    symbol: string;
 }
 export interface MarketStats {
     currentPrice: number;
@@ -108,8 +101,22 @@ export interface MarketStats {
     priceChange24h: number;
     allTimeHigh: number;
 }
-export interface UserProfile {
+export interface PricePoint {
+    timestamp: bigint;
+    price: number;
+}
+export interface CoinProfile {
     name: string;
+    description: string;
+    logoUrl: string;
+    symbol: string;
+}
+export interface UserStats {
+    principal: Principal;
+    totalReceived: bigint;
+    balance: bigint;
+    totalSent: bigint;
+    transferCount: bigint;
 }
 export interface Transaction {
     id: bigint;
@@ -129,8 +136,8 @@ export interface backendInterface {
     addPricePoint(pricePoint: PricePoint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     claimInitialAdmin(): Promise<void>;
-    resetAndClaimAdmin(): Promise<void>;
     clearPriceHistory(): Promise<void>;
+    getAllUserStats(): Promise<Array<UserStats>>;
     getBalance(principal: Principal): Promise<bigint>;
     getCallerBalance(): Promise<bigint>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -150,6 +157,7 @@ export interface backendInterface {
     hasAdminBeenClaimed(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     mintTokens(to: Principal, amount: bigint): Promise<void>;
+    registerUser(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setTaxAccount(account: Principal): Promise<void>;
     transfer(to: Principal, amount: bigint): Promise<void>;
@@ -216,20 +224,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async resetAndClaimAdmin(): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.resetAndClaimAdmin();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.resetAndClaimAdmin();
-            return result;
-        }
-    }
     async clearPriceHistory(): Promise<void> {
         if (this.processError) {
             try {
@@ -241,6 +235,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.clearPriceHistory();
+            return result;
+        }
+    }
+    async getAllUserStats(): Promise<Array<UserStats>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllUserStats();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllUserStats();
             return result;
         }
     }
@@ -507,6 +515,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.mintTokens(arg0, arg1);
+            return result;
+        }
+    }
+    async registerUser(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.registerUser();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.registerUser();
             return result;
         }
     }

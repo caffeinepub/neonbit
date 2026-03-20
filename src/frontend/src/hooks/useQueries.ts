@@ -243,7 +243,7 @@ export function useResetAndClaimAdmin() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
-      await actor.resetAndClaimAdmin();
+      await (actor as any).resetAndClaimAdmin();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
@@ -260,5 +260,18 @@ export function useRegisterUser() {
       // registerUser is available in backend but may not be in generated types
       await (actor as any).registerUser();
     },
+  });
+}
+
+export function useAllUserStats() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["allUserStats"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllUserStats();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 30000,
   });
 }

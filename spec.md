@@ -1,21 +1,23 @@
 # NEONBIT
 
 ## Current State
-Admin claim works once. If admin was claimed before with a different principal, user sees no-privileges error with no recovery path.
+Admin Control Panel has tabs: Coin Details, Market Stats, Mint Tokens, Tax Settings, Security. Backend has getTopHolders, getRecentTransactions, getTransactionHistory. No unified per-user stats view exists for admin.
 
 ## Requested Changes (Diff)
 
 ### Add
-- resetAndClaimAdmin() backend function: clears admin state and claims for caller
-- Recovery UI in AdminPanel when adminClaimed=true but isAdmin=false
+- New backend query `getAllUserStats()` (admin only) returning array of UserStats: { principal, balance, totalSent, totalReceived, transferCount }
+- New "User Stats" tab in Admin Control Panel showing a table: User ID (Principal), Token Holding, Total Sent, Total Received, Transfer Count
+- Search/filter by Principal ID in the table
 
-### Modify  
-- AdminPanel: show Reset & Reclaim Admin button in no-privileges block
+### Modify
+- Backend: compute per-user stats from existing transactions + balances arrays
+- Admin Control Panel: add "User Stats" tab alongside existing tabs
 
 ### Remove
-Nothing.
+- Nothing
 
 ## Implementation Plan
-1. Add resetAndClaimAdmin() to main.mo
-2. Add useResetAndClaimAdmin mutation hook
-3. Update AdminPanel recovery section
+1. Add `getAllUserStats` query to backend (admin-only), iterating balances map and transactions to aggregate per-user stats
+2. Regenerate backend bindings
+3. Add User Stats tab to Admin Control Panel in frontend with sortable table, search, and copy Principal ID button

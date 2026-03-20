@@ -11,7 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
+  ArrowDownUp,
+  Check,
   Coins,
+  Copy,
   Crown,
   Eye,
   EyeOff,
@@ -19,15 +22,19 @@ import {
   Loader2,
   Lock,
   Percent,
+  RefreshCw,
+  Search,
   Shield,
   User,
+  Users,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CoinProfile, MarketStats } from "../backend";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
+  useAllUserStats,
   useClaimInitialAdmin,
   useCoinProfile,
   useGetTaxAccount,
@@ -54,6 +61,247 @@ function e8sToDr(e8s: bigint): string {
     minimumFractionDigits: 4,
     maximumFractionDigits: 4,
   });
+}
+
+function e8sToDrShort(e8s: bigint): string {
+  const dr = Number(e8s) / 1e8;
+  if (dr >= 1_000_000) return `${(dr / 1_000_000).toFixed(2)}M`;
+  if (dr >= 1_000) return `${(dr / 1_000).toFixed(2)}K`;
+  return dr.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+type SortKey = "balance" | "totalSent" | "totalReceived" | "transferCount";
+type SortDir = "asc" | "desc";
+
+function CopyPrincipal({ principal }: { principal: string }) {
+  const [copied, setCopied] = useState(false);
+  const short = `${principal.slice(0, 8)}...${principal.slice(-4)}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(principal).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span
+        className="font-mono text-xs text-neon-cyan truncate"
+        title={principal}
+      >
+        {short}
+      </span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="flex-shrink-0 p-1 rounded hover:bg-neon-cyan/10 text-muted-foreground hover:text-neon-cyan transition-colors"
+        title="Copy full Principal ID"
+      >
+        {copied ? (
+          <Check className="w-3 h-3 text-neon-green" />
+        ) : (
+          <Copy className="w-3 h-3" />
+        )}
+      </button>
+    </div>
+  );
+}
+
+function UserStatsTab() {
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useAllUserStats();
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("balance");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const filtered = useMemo(() => {
+    let list = rows.map((r) => ({
+      ...r,
+      principalStr: r.principal.toString(),
+    }));
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((r) => r.principalStr.toLowerCase().includes(q));
+    }
+    list.sort((a, b) => {
+      const av = Number(a[sortKey]);
+      const bv = Number(b[sortKey]);
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+    return list;
+  }, [rows, search, sortKey, sortDir]);
+
+  const SortIcon = ({ col }: { col: SortKey }) => (
+    <ArrowDownUp
+      className={`w-3 h-3 inline-block ml-1 transition-opacity ${
+        sortKey === col ? "opacity-100 text-neon-cyan" : "opacity-30"
+      }`}
+    />
+  );
+
+  return (
+    <div className="flex flex-col gap-4 mt-4">
+      {/* Header row */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Principal ID se search karein..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-input border-border text-foreground text-xs pl-8"
+            data-ocid="admin.search_input"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 px-2.5"
+          data-ocid="admin.secondary_button"
+          title="Refresh"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
+          />
+        </Button>
+      </div>
+
+      {/* Summary badge */}
+      <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2">
+        <Users className="w-4 h-4 text-purple-400 flex-shrink-0" />
+        <span className="text-xs text-purple-300 font-semibold">
+          Kul registered users:{" "}
+          <span className="text-white font-bold">{rows.length}</span>
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div
+          className="flex flex-col items-center gap-3 py-10"
+          data-ocid="admin.loading_state"
+        >
+          <Loader2 className="w-7 h-7 animate-spin text-neon-cyan" />
+          <p className="text-sm text-muted-foreground">
+            User stats load ho raha hai...
+          </p>
+        </div>
+      ) : isError ? (
+        <div
+          className="flex flex-col items-center gap-2 py-8 text-center"
+          data-ocid="admin.error_state"
+        >
+          <AlertTriangle className="w-6 h-6 text-red-400" />
+          <p className="text-sm text-red-400">
+            Stats load nahi ho sake. Dobara try karein.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetch()}
+            className="border-red-400/40 text-red-400 hover:bg-red-400/10"
+          >
+            Retry
+          </Button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div
+          className="flex flex-col items-center gap-2 py-10 text-center"
+          data-ocid="admin.empty_state"
+        >
+          <Users className="w-8 h-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">
+            {search
+              ? "Koi user nahi mila is search ke liye."
+              : "Abhi koi user registered nahi hai."}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-xs" data-ocid="admin.table">
+            <thead>
+              <tr className="border-b border-border bg-secondary/60">
+                <th className="px-3 py-2.5 text-left text-muted-foreground font-semibold whitespace-nowrap">
+                  User ID
+                </th>
+                {(
+                  [
+                    ["balance", "Holding (DR)"],
+                    ["totalSent", "Sent (DR)"],
+                    ["totalReceived", "Received (DR)"],
+                    ["transferCount", "Transfers"],
+                  ] as [SortKey, string][]
+                ).map(([col, label]) => (
+                  <th
+                    key={col}
+                    className="px-3 py-2.5 text-right text-muted-foreground font-semibold whitespace-nowrap select-none"
+                  >
+                    <button
+                      type="button"
+                      className="w-full text-right cursor-pointer hover:text-foreground transition-colors"
+                      onClick={() => handleSort(col)}
+                      onKeyDown={(e) =>
+                        (e.key === "Enter" || e.key === " ") && handleSort(col)
+                      }
+                    >
+                      {label}
+                      <SortIcon col={col} />
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row, i) => (
+                <tr
+                  key={row.principalStr}
+                  className="border-b border-border/50 hover:bg-neon-cyan/5 transition-colors"
+                  data-ocid={`admin.row.${i + 1}`}
+                >
+                  <td className="px-3 py-2.5 max-w-[140px]">
+                    <CopyPrincipal principal={row.principalStr} />
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-neon-cyan font-semibold">
+                    {e8sToDrShort(row.balance)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-red-400">
+                    {e8sToDrShort(row.totalSent)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-neon-green">
+                    {e8sToDrShort(row.totalReceived)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-purple-400">
+                    {row.transferCount.toString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <p className="text-[10px] text-muted-foreground/50 text-center">
+        Har 30 seconds mein auto-refresh hota hai &bull; {filtered.length} /{" "}
+        {rows.length} users dikha rahe hain
+      </p>
+    </div>
+  );
 }
 
 interface AdminPanelProps {
@@ -436,6 +684,13 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               >
                 Security
               </TabsTrigger>
+              <TabsTrigger
+                value="userstats"
+                className="flex-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-xs"
+                data-ocid="admin.tab"
+              >
+                User Stats
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="mt-4 flex flex-col gap-4">
@@ -809,6 +1064,11 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 <KeyRound className="w-4 h-4" />
                 Password Change Karein
               </Button>
+            </TabsContent>
+
+            {/* USER STATS TAB */}
+            <TabsContent value="userstats">
+              <UserStatsTab />
             </TabsContent>
           </Tabs>
         )}

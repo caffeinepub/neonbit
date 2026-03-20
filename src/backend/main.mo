@@ -65,6 +65,14 @@ actor {
 
   type Transaction = { id : Nat; from : Principal; to : Principal; amount : Nat; timestamp : Int; memo : Text };
 
+  type UserStats = {
+    principal : Principal;
+    balance : Nat;
+    totalSent : Nat;
+    totalReceived : Nat;
+    transferCount : Nat;
+  };
+
   let balances = Map.empty<Principal, Nat>();
   var totalMinted = 0;
   var nextTxId = 0;
@@ -297,6 +305,46 @@ actor {
     let size = Nat.min(Nat.min(limit, 100), sorted.size());
     if (size == 0) return [];
     sorted.sliceToArray(0, size);
+  };
+
+  public query ({ caller }) func getAllUserStats() : async [UserStats] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let balanceArray = balances.toArray();
+    let allStats = balanceArray.map(
+      func((principal, balance)) {
+        let userTxs = transactions.filter(
+          func(tx) { tx.from == principal or tx.to == principal }
+        );
+        var totalSent = 0;
+        var totalReceived = 0;
+        let transferCount = userTxs.size();
+
+        let transferTxs = userTxs.filter(
+          func(tx) { tx.memo != "Mint" and tx.memo != "Tax (3%)" }
+        );
+
+        for (tx in transferTxs.values()) {
+          if (tx.from == principal) {
+            totalSent += tx.amount;
+          } else if (tx.to == principal) {
+            totalReceived += tx.amount;
+          };
+        };
+
+        {
+          principal;
+          balance;
+          totalSent;
+          totalReceived;
+          transferCount;
+        };
+      }
+    );
+
+    allStats;
   };
 
   func addTransaction(tx : Transaction) {
