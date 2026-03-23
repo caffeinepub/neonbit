@@ -20,41 +20,41 @@ const steps = [
   {
     number: 1,
     icon: User,
-    title: "Login Karein",
+    title: "Login",
     description:
-      "Navbar mein 'Login' button dabayein. Internet Identity window khulegi -- apna account se login karein. Browser popup allow karein.",
+      "Click the 'Login' button in the navbar. An Internet Identity window will open — log in with your account. Allow browser popups.",
     color: "cyan",
   },
   {
     number: 2,
     icon: Shield,
-    title: "Admin Access Claim Karein",
+    title: "Claim Admin Access",
     description:
-      "Login ke baad navbar mein 'Control Panel' button aayega. Kholein aur 'Claim Admin Access' button dabayein -- sirf pehli baar, aap permanent admin ban jayenge.",
+      "After login, the 'Control Panel' button will appear in the navbar. Open it and click 'Claim Admin Access' — only needed once, you become a permanent admin.",
     color: "green",
   },
   {
     number: 3,
     icon: Percent,
-    title: "Tax Account Set Karein",
+    title: "Set Tax Account",
     description:
-      "Control Panel > Tax Settings tab mein jayein. 'Use My Principal as Tax Account' button dabayein aur save karein. Ab har transfer ka 3% aapko milega.",
+      "Go to Control Panel > Tax Settings tab. Click 'Use My Principal as Tax Account' and save. 3% of every transfer will be credited to your account.",
     color: "purple",
   },
   {
     number: 4,
     icon: Coins,
-    title: "Tokens Mint Karein",
+    title: "Mint Tokens",
     description:
-      "Control Panel > Mint Tokens tab mein jayein. Apna Principal ID daalen, amount likhen, aur 'Mint Tokens' dabayein. DR tokens aapke wallet mein aa jayenge.",
+      "Go to Control Panel > Mint Tokens tab. Enter your Principal ID, specify an amount, and click 'Mint Tokens'. DR tokens will be added to your wallet.",
     color: "yellow",
   },
   {
     number: 5,
     icon: Share2,
-    title: "Token Share Karein",
+    title: "Share Tokens",
     description:
-      "Apna app link share karein. Doosron ko Wallet button se apna Principal ID copy karke aapko bhejna hoga taaki aap unhe tokens transfer kar sakein.",
+      "Share your app link. Others will need to copy their Principal ID from the Wallet button and send it to you so you can transfer tokens to them.",
     color: "orange",
   },
 ];
@@ -130,10 +130,10 @@ export default function SetupGuide({ open, onClose }: SetupGuideProps) {
                   </div>
                   <div>
                     <h2 className="font-bold text-lg text-foreground leading-tight">
-                      Setup Guide — Sab Steps
+                      Setup Guide — All Steps
                     </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Yeh steps follow karein apna @dr coin setup karne ke liye
+                      Follow these steps to set up your @dr coin
                     </p>
                   </div>
                 </div>
@@ -203,12 +203,11 @@ export default function SetupGuide({ open, onClose }: SetupGuideProps) {
                       <span className="font-semibold text-neon-cyan">
                         💡 Tip:
                       </span>{" "}
-                      Control Panel mein jaane ke liye pehle login karein, phir
-                      navbar mein{" "}
+                      To access the Control Panel, first log in, then click the{" "}
                       <span className="font-semibold text-neon-cyan">
                         'Control Panel'
                       </span>{" "}
-                      button dabayein.
+                      button in the navbar.
                     </p>
                   </div>
                 </div>
@@ -222,7 +221,7 @@ export default function SetupGuide({ open, onClose }: SetupGuideProps) {
                   onClick={onClose}
                   data-ocid="setup_guide.close_button"
                 >
-                  Samajh Gaye ✓
+                  Got It ✓
                 </Button>
               </div>
             </div>

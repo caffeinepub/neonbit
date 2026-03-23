@@ -101,6 +101,16 @@ export interface MarketStats {
     priceChange24h: number;
     allTimeHigh: number;
 }
+export interface Listing {
+    id: bigint;
+    status: ListingStatus;
+    createdAt: bigint;
+    seller: Principal;
+    updatedAt: bigint;
+    buyer?: Principal;
+    priceICP: number;
+    amount: bigint;
+}
 export interface PricePoint {
     timestamp: bigint;
     price: number;
@@ -126,6 +136,12 @@ export interface Transaction {
     timestamp: bigint;
     amount: bigint;
 }
+export enum ListingStatus {
+    Open = "Open",
+    Cancelled = "Cancelled",
+    Completed = "Completed",
+    Pending = "Pending"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -134,9 +150,13 @@ export enum UserRole {
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addPricePoint(pricePoint: PricePoint): Promise<void>;
+    adminResolve(listingId: bigint, releaseToBuyer: boolean): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    cancelListing(listingId: bigint): Promise<void>;
     claimInitialAdmin(): Promise<void>;
     clearPriceHistory(): Promise<void>;
+    confirmSale(listingId: bigint): Promise<void>;
+    createListing(amount: bigint, priceICP: number): Promise<bigint>;
     getAllUserStats(): Promise<Array<UserStats>>;
     getBalance(principal: Principal): Promise<bigint>;
     getCallerBalance(): Promise<bigint>;
@@ -146,7 +166,9 @@ export interface backendInterface {
     getFixedTotalSupply(): Promise<number>;
     getFixedTotalSupplyNat(): Promise<bigint>;
     getLatestPricePoint(): Promise<PricePoint | null>;
+    getListings(): Promise<Array<Listing>>;
     getMarketStats(): Promise<MarketStats>;
+    getMyListings(): Promise<Array<Listing>>;
     getPriceHistory(): Promise<Array<PricePoint>>;
     getRecentTransactions(): Promise<Array<Transaction>>;
     getTaxAccount(): Promise<Principal | null>;
@@ -155,6 +177,7 @@ export interface backendInterface {
     getTransactionHistory(principal: Principal): Promise<Array<Transaction>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     hasAdminBeenClaimed(): Promise<boolean>;
+    initiatePurchase(listingId: bigint): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     mintTokens(to: Principal, amount: bigint): Promise<void>;
     registerUser(): Promise<void>;
@@ -165,7 +188,7 @@ export interface backendInterface {
     updateCoinProfileAndMarketStats(profile: CoinProfile, stats: MarketStats): Promise<void>;
     updateMarketStats(stats: MarketStats): Promise<void>;
 }
-import type { PricePoint as _PricePoint, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { Listing as _Listing, ListingStatus as _ListingStatus, PricePoint as _PricePoint, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -196,6 +219,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async adminResolve(arg0: bigint, arg1: boolean): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminResolve(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminResolve(arg0, arg1);
+            return result;
+        }
+    }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
@@ -207,6 +244,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async cancelListing(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.cancelListing(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.cancelListing(arg0);
             return result;
         }
     }
@@ -235,6 +286,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.clearPriceHistory();
+            return result;
+        }
+    }
+    async confirmSale(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.confirmSale(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.confirmSale(arg0);
+            return result;
+        }
+    }
+    async createListing(arg0: bigint, arg1: number): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createListing(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createListing(arg0, arg1);
             return result;
         }
     }
@@ -364,6 +443,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getListings(): Promise<Array<Listing>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getListings();
+                return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getListings();
+            return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getMarketStats(): Promise<MarketStats> {
         if (this.processError) {
             try {
@@ -376,6 +469,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getMarketStats();
             return result;
+        }
+    }
+    async getMyListings(): Promise<Array<Listing>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getMyListings();
+                return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getMyListings();
+            return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPriceHistory(): Promise<Array<PricePoint>> {
@@ -410,14 +517,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getTaxAccount();
-                return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getTaxAccount();
-            return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTopHolders(arg0: bigint): Promise<Array<[Principal, bigint]>> {
@@ -487,6 +594,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.hasAdminBeenClaimed();
+            return result;
+        }
+    }
+    async initiatePurchase(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.initiatePurchase(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.initiatePurchase(arg0);
             return result;
         }
     }
@@ -617,8 +738,17 @@ export class Backend implements backendInterface {
         }
     }
 }
+function from_candid_ListingStatus_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ListingStatus): ListingStatus {
+    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
+}
+function from_candid_Listing_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Listing): Listing {
+    return from_candid_record_n9(_uploadFile, _downloadFile, value);
+}
 function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
     return from_candid_variant_n5(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
+    return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
@@ -626,8 +756,46 @@ function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PricePoint]): PricePoint | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
-    return value.length === 0 ? null : value[0];
+function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
+    status: _ListingStatus;
+    createdAt: bigint;
+    seller: Principal;
+    updatedAt: bigint;
+    buyer: [] | [Principal];
+    priceICP: number;
+    amount: bigint;
+}): {
+    id: bigint;
+    status: ListingStatus;
+    createdAt: bigint;
+    seller: Principal;
+    updatedAt: bigint;
+    buyer?: Principal;
+    priceICP: number;
+    amount: bigint;
+} {
+    return {
+        id: value.id,
+        status: from_candid_ListingStatus_n10(_uploadFile, _downloadFile, value.status),
+        createdAt: value.createdAt,
+        seller: value.seller,
+        updatedAt: value.updatedAt,
+        buyer: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.buyer)),
+        priceICP: value.priceICP,
+        amount: value.amount
+    };
+}
+function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    Open: null;
+} | {
+    Cancelled: null;
+} | {
+    Completed: null;
+} | {
+    Pending: null;
+}): ListingStatus {
+    return "Open" in value ? ListingStatus.Open : "Cancelled" in value ? ListingStatus.Cancelled : "Completed" in value ? ListingStatus.Completed : "Pending" in value ? ListingStatus.Pending : value;
 }
 function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
@@ -637,6 +805,9 @@ function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uin
     guest: null;
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+}
+function from_candid_vec_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Listing>): Array<Listing> {
+    return value.map((x)=>from_candid_Listing_n8(_uploadFile, _downloadFile, x));
 }
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);

@@ -8,10 +8,12 @@ import HeroSection from "./components/HeroSection";
 import HowToBuy from "./components/HowToBuy";
 import LiveTicker from "./components/LiveTicker";
 import MarketOverview from "./components/MarketOverview";
+import MarketPanel from "./components/MarketPanel";
 import MarketStats from "./components/MarketStats";
 import Navbar from "./components/Navbar";
 import PriceChart from "./components/PriceChart";
 import SetupGuide from "./components/SetupGuide";
+import TokenInfo from "./components/TokenInfo";
 import TrendingHolders from "./components/TrendingHolders";
 import WalletPanel from "./components/WalletPanel";
 
@@ -21,6 +23,7 @@ function AppContent() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
+  const [marketOpen, setMarketOpen] = useState(false);
 
   return (
     <div
@@ -38,6 +41,7 @@ function AppContent() {
         onAdminClick={() => setAdminOpen(true)}
         onWalletClick={() => setWalletOpen(true)}
         onSetupClick={() => setSetupOpen(true)}
+        onMarketClick={() => setMarketOpen(true)}
       />
 
       <main>
@@ -47,6 +51,7 @@ function AppContent() {
         <TrendingHolders />
         <AIEcosystem />
         <PriceChart />
+        <TokenInfo />
         <HowToBuy />
         <MarketOverview />
       </main>
@@ -55,6 +60,7 @@ function AppContent() {
       <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
       <WalletPanel open={walletOpen} onClose={() => setWalletOpen(false)} />
       <SetupGuide open={setupOpen} onClose={() => setSetupOpen(false)} />
+      <MarketPanel open={marketOpen} onClose={() => setMarketOpen(false)} />
       <Toaster position="top-right" />
     </div>
   );

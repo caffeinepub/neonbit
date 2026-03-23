@@ -31,6 +31,22 @@ export const CoinProfile = IDL.Record({
   'logoUrl' : IDL.Text,
   'symbol' : IDL.Text,
 });
+export const ListingStatus = IDL.Variant({
+  'Open' : IDL.Null,
+  'Cancelled' : IDL.Null,
+  'Completed' : IDL.Null,
+  'Pending' : IDL.Null,
+});
+export const Listing = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : ListingStatus,
+  'createdAt' : IDL.Int,
+  'seller' : IDL.Principal,
+  'updatedAt' : IDL.Int,
+  'buyer' : IDL.Opt(IDL.Principal),
+  'priceICP' : IDL.Float64,
+  'amount' : IDL.Nat,
+});
 export const MarketStats = IDL.Record({
   'currentPrice' : IDL.Float64,
   'circulatingSupply' : IDL.Float64,
@@ -52,9 +68,13 @@ export const Transaction = IDL.Record({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addPricePoint' : IDL.Func([PricePoint], [], []),
+  'adminResolve' : IDL.Func([IDL.Nat, IDL.Bool], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'cancelListing' : IDL.Func([IDL.Nat], [], []),
   'claimInitialAdmin' : IDL.Func([], [], []),
   'clearPriceHistory' : IDL.Func([], [], []),
+  'confirmSale' : IDL.Func([IDL.Nat], [], []),
+  'createListing' : IDL.Func([IDL.Nat, IDL.Float64], [IDL.Nat], []),
   'getAllUserStats' : IDL.Func([], [IDL.Vec(UserStats)], ['query']),
   'getBalance' : IDL.Func([IDL.Principal], [IDL.Nat], ['query']),
   'getCallerBalance' : IDL.Func([], [IDL.Nat], ['query']),
@@ -64,7 +84,9 @@ export const idlService = IDL.Service({
   'getFixedTotalSupply' : IDL.Func([], [IDL.Float64], ['query']),
   'getFixedTotalSupplyNat' : IDL.Func([], [IDL.Nat], ['query']),
   'getLatestPricePoint' : IDL.Func([], [IDL.Opt(PricePoint)], ['query']),
+  'getListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
   'getMarketStats' : IDL.Func([], [MarketStats], ['query']),
+  'getMyListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
   'getPriceHistory' : IDL.Func([], [IDL.Vec(PricePoint)], ['query']),
   'getRecentTransactions' : IDL.Func([], [IDL.Vec(Transaction)], ['query']),
   'getTaxAccount' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
@@ -85,6 +107,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'hasAdminBeenClaimed' : IDL.Func([], [IDL.Bool], ['query']),
+  'initiatePurchase' : IDL.Func([IDL.Nat], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'mintTokens' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
   'registerUser' : IDL.Func([], [], []),
@@ -126,6 +149,22 @@ export const idlFactory = ({ IDL }) => {
     'logoUrl' : IDL.Text,
     'symbol' : IDL.Text,
   });
+  const ListingStatus = IDL.Variant({
+    'Open' : IDL.Null,
+    'Cancelled' : IDL.Null,
+    'Completed' : IDL.Null,
+    'Pending' : IDL.Null,
+  });
+  const Listing = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : ListingStatus,
+    'createdAt' : IDL.Int,
+    'seller' : IDL.Principal,
+    'updatedAt' : IDL.Int,
+    'buyer' : IDL.Opt(IDL.Principal),
+    'priceICP' : IDL.Float64,
+    'amount' : IDL.Nat,
+  });
   const MarketStats = IDL.Record({
     'currentPrice' : IDL.Float64,
     'circulatingSupply' : IDL.Float64,
@@ -147,9 +186,13 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addPricePoint' : IDL.Func([PricePoint], [], []),
+    'adminResolve' : IDL.Func([IDL.Nat, IDL.Bool], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'cancelListing' : IDL.Func([IDL.Nat], [], []),
     'claimInitialAdmin' : IDL.Func([], [], []),
     'clearPriceHistory' : IDL.Func([], [], []),
+    'confirmSale' : IDL.Func([IDL.Nat], [], []),
+    'createListing' : IDL.Func([IDL.Nat, IDL.Float64], [IDL.Nat], []),
     'getAllUserStats' : IDL.Func([], [IDL.Vec(UserStats)], ['query']),
     'getBalance' : IDL.Func([IDL.Principal], [IDL.Nat], ['query']),
     'getCallerBalance' : IDL.Func([], [IDL.Nat], ['query']),
@@ -159,7 +202,9 @@ export const idlFactory = ({ IDL }) => {
     'getFixedTotalSupply' : IDL.Func([], [IDL.Float64], ['query']),
     'getFixedTotalSupplyNat' : IDL.Func([], [IDL.Nat], ['query']),
     'getLatestPricePoint' : IDL.Func([], [IDL.Opt(PricePoint)], ['query']),
+    'getListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
     'getMarketStats' : IDL.Func([], [MarketStats], ['query']),
+    'getMyListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
     'getPriceHistory' : IDL.Func([], [IDL.Vec(PricePoint)], ['query']),
     'getRecentTransactions' : IDL.Func([], [IDL.Vec(Transaction)], ['query']),
     'getTaxAccount' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
@@ -180,6 +225,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'hasAdminBeenClaimed' : IDL.Func([], [IDL.Bool], ['query']),
+    'initiatePurchase' : IDL.Func([IDL.Nat], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'mintTokens' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
     'registerUser' : IDL.Func([], [], []),

@@ -19,6 +19,16 @@ export interface MarketStats {
     priceChange24h: number;
     allTimeHigh: number;
 }
+export interface Listing {
+    id: bigint;
+    status: ListingStatus;
+    createdAt: bigint;
+    seller: Principal;
+    updatedAt: bigint;
+    buyer?: Principal;
+    priceICP: number;
+    amount: bigint;
+}
 export interface PricePoint {
     timestamp: bigint;
     price: number;
@@ -44,6 +54,12 @@ export interface Transaction {
     timestamp: bigint;
     amount: bigint;
 }
+export enum ListingStatus {
+    Open = "Open",
+    Cancelled = "Cancelled",
+    Completed = "Completed",
+    Pending = "Pending"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -51,9 +67,13 @@ export enum UserRole {
 }
 export interface backendInterface {
     addPricePoint(pricePoint: PricePoint): Promise<void>;
+    adminResolve(listingId: bigint, releaseToBuyer: boolean): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    cancelListing(listingId: bigint): Promise<void>;
     claimInitialAdmin(): Promise<void>;
     clearPriceHistory(): Promise<void>;
+    confirmSale(listingId: bigint): Promise<void>;
+    createListing(amount: bigint, priceICP: number): Promise<bigint>;
     getAllUserStats(): Promise<Array<UserStats>>;
     getBalance(principal: Principal): Promise<bigint>;
     getCallerBalance(): Promise<bigint>;
@@ -63,7 +83,9 @@ export interface backendInterface {
     getFixedTotalSupply(): Promise<number>;
     getFixedTotalSupplyNat(): Promise<bigint>;
     getLatestPricePoint(): Promise<PricePoint | null>;
+    getListings(): Promise<Array<Listing>>;
     getMarketStats(): Promise<MarketStats>;
+    getMyListings(): Promise<Array<Listing>>;
     getPriceHistory(): Promise<Array<PricePoint>>;
     getRecentTransactions(): Promise<Array<Transaction>>;
     getTaxAccount(): Promise<Principal | null>;
@@ -72,6 +94,7 @@ export interface backendInterface {
     getTransactionHistory(principal: Principal): Promise<Array<Transaction>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     hasAdminBeenClaimed(): Promise<boolean>;
+    initiatePurchase(listingId: bigint): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     mintTokens(to: Principal, amount: bigint): Promise<void>;
     registerUser(): Promise<void>;

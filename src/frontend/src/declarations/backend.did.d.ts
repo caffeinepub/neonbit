@@ -16,6 +16,20 @@ export interface CoinProfile {
   'logoUrl' : string,
   'symbol' : string,
 }
+export interface Listing {
+  'id' : bigint,
+  'status' : ListingStatus,
+  'createdAt' : bigint,
+  'seller' : Principal,
+  'updatedAt' : bigint,
+  'buyer' : [] | [Principal],
+  'priceICP' : number,
+  'amount' : bigint,
+}
+export type ListingStatus = { 'Open' : null } |
+  { 'Cancelled' : null } |
+  { 'Completed' : null } |
+  { 'Pending' : null };
 export interface MarketStats {
   'currentPrice' : number,
   'circulatingSupply' : number,
@@ -48,9 +62,13 @@ export interface UserStats {
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addPricePoint' : ActorMethod<[PricePoint], undefined>,
+  'adminResolve' : ActorMethod<[bigint, boolean], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'cancelListing' : ActorMethod<[bigint], undefined>,
   'claimInitialAdmin' : ActorMethod<[], undefined>,
   'clearPriceHistory' : ActorMethod<[], undefined>,
+  'confirmSale' : ActorMethod<[bigint], undefined>,
+  'createListing' : ActorMethod<[bigint, number], bigint>,
   'getAllUserStats' : ActorMethod<[], Array<UserStats>>,
   'getBalance' : ActorMethod<[Principal], bigint>,
   'getCallerBalance' : ActorMethod<[], bigint>,
@@ -60,7 +78,9 @@ export interface _SERVICE {
   'getFixedTotalSupply' : ActorMethod<[], number>,
   'getFixedTotalSupplyNat' : ActorMethod<[], bigint>,
   'getLatestPricePoint' : ActorMethod<[], [] | [PricePoint]>,
+  'getListings' : ActorMethod<[], Array<Listing>>,
   'getMarketStats' : ActorMethod<[], MarketStats>,
+  'getMyListings' : ActorMethod<[], Array<Listing>>,
   'getPriceHistory' : ActorMethod<[], Array<PricePoint>>,
   'getRecentTransactions' : ActorMethod<[], Array<Transaction>>,
   'getTaxAccount' : ActorMethod<[], [] | [Principal]>,
@@ -69,6 +89,7 @@ export interface _SERVICE {
   'getTransactionHistory' : ActorMethod<[Principal], Array<Transaction>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'hasAdminBeenClaimed' : ActorMethod<[], boolean>,
+  'initiatePurchase' : ActorMethod<[bigint], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'mintTokens' : ActorMethod<[Principal, bigint], undefined>,
   'registerUser' : ActorMethod<[], undefined>,

@@ -77,8 +77,8 @@ export default function TrendingHolders() {
                   Login Required
                 </p>
                 <p className="text-muted-foreground text-sm">
-                  Trending holders, transfers aur token holding ke liye pehle
-                  login karein
+                  Please log in to view trending holders, transfers, and token
+                  holdings
                 </p>
               </div>
               <Button

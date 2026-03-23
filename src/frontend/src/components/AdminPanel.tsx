@@ -161,7 +161,7 @@ function UserStatsTab() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Principal ID se search karein..."
+            placeholder="Search by Principal ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-input border-border text-foreground text-xs pl-8"
@@ -187,7 +187,7 @@ function UserStatsTab() {
       <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2">
         <Users className="w-4 h-4 text-purple-400 flex-shrink-0" />
         <span className="text-xs text-purple-300 font-semibold">
-          Kul registered users:{" "}
+          Total registered users:{" "}
           <span className="text-white font-bold">{rows.length}</span>
         </span>
       </div>
@@ -198,9 +198,7 @@ function UserStatsTab() {
           data-ocid="admin.loading_state"
         >
           <Loader2 className="w-7 h-7 animate-spin text-neon-cyan" />
-          <p className="text-sm text-muted-foreground">
-            User stats load ho raha hai...
-          </p>
+          <p className="text-sm text-muted-foreground">Loading user stats...</p>
         </div>
       ) : isError ? (
         <div
@@ -209,7 +207,7 @@ function UserStatsTab() {
         >
           <AlertTriangle className="w-6 h-6 text-red-400" />
           <p className="text-sm text-red-400">
-            Stats load nahi ho sake. Dobara try karein.
+            Could not load stats. Please try again.
           </p>
           <Button
             size="sm"
@@ -228,8 +226,8 @@ function UserStatsTab() {
           <Users className="w-8 h-8 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">
             {search
-              ? "Koi user nahi mila is search ke liye."
-              : "Abhi koi user registered nahi hai."}
+              ? "No users found for this search."
+              : "No users registered yet."}
           </p>
         </div>
       ) : (
@@ -297,8 +295,8 @@ function UserStatsTab() {
       )}
 
       <p className="text-[10px] text-muted-foreground/50 text-center">
-        Har 30 seconds mein auto-refresh hota hai &bull; {filtered.length} /{" "}
-        {rows.length} users dikha rahe hain
+        Auto-refreshes every 30 seconds &bull; {filtered.length} / {rows.length}{" "}
+        users shown
       </p>
     </div>
   );
@@ -385,27 +383,27 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
       setPasswordError("");
       setPasswordInput("");
     } else {
-      setPasswordError("Galat password hai. Dobara try karein.");
+      setPasswordError("Incorrect password. Please try again.");
     }
   };
 
   const handleChangePassword = () => {
     if (!newPassword.trim()) {
-      toast.error("Naya password enter karein.");
+      toast.error("Please enter a new password.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords match nahi kar rahe.");
+      toast.error("Passwords do not match.");
       return;
     }
     if (newPassword.length < 4) {
-      toast.error("Password kam se kam 4 characters ka hona chahiye.");
+      toast.error("Password must be at least 4 characters.");
       return;
     }
     localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword);
     setNewPassword("");
     setConfirmPassword("");
-    toast.success("Password successfully change ho gaya!");
+    toast.success("Password changed successfully!");
   };
 
   const handleSaveProfile = async () => {
@@ -518,14 +516,14 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 Admin Password
               </h3>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Control Panel access ke liye password darj karein.
+                Enter your password to access the Control Panel.
               </p>
             </div>
             <div className="w-full max-w-xs flex flex-col gap-3">
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Password enter karein..."
+                  placeholder="Enter password..."
                   value={passwordInput}
                   onChange={(e) => {
                     setPasswordInput(e.target.value);
@@ -914,8 +912,9 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                     3% Transfer Tax
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Har coin transfer par automatically 3% tax aapke designated
-                    account mein aayega. Remaining 97% recipient ko milega.
+                    A 3% tax is automatically deducted from every coin transfer
+                    to your designated account. The recipient receives the
+                    remaining 97%.
                   </p>
                 </div>
               </div>
@@ -1009,20 +1008,20 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                     Admin Panel Password
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Yeh password har baar Control Panel kholne par maanga
-                    jaayega. Ise safe jagah save karein.
+                    This password will be required every time you open the
+                    Control Panel. Save it in a safe place.
                   </p>
                 </div>
               </div>
 
               <div>
                 <Label className="text-muted-foreground text-xs mb-1.5 block">
-                  Naya Password
+                  New Password
                 </Label>
                 <div className="relative">
                   <Input
                     type={showNewPw ? "text" : "password"}
-                    placeholder="Naya password darj karein"
+                    placeholder="Enter new password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="bg-input border-border text-foreground pr-10"
@@ -1044,11 +1043,11 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
 
               <div>
                 <Label className="text-muted-foreground text-xs mb-1.5 block">
-                  Password Confirm Karein
+                  Confirm Password
                 </Label>
                 <Input
                   type="password"
-                  placeholder="Wahi password dobara darj karein"
+                  placeholder="Re-enter the same password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="bg-input border-border text-foreground"
@@ -1062,7 +1061,7 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
                 data-ocid="admin.submit_button"
               >
                 <KeyRound className="w-4 h-4" />
-                Password Change Karein
+                Change Password
               </Button>
             </TabsContent>
 

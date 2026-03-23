@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CoinProfile, MarketStats } from "../backend";
+import type { CoinProfile, Listing, MarketStats } from "../backend";
 import { useActor } from "./useActor";
 import { useInternetIdentity } from "./useInternetIdentity";
 
@@ -257,7 +257,6 @@ export function useRegisterUser() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
-      // registerUser is available in backend but may not be in generated types
       await (actor as any).registerUser();
     },
   });
@@ -273,5 +272,128 @@ export function useAllUserStats() {
     },
     enabled: !!actor && !isFetching,
     refetchInterval: 30000,
+  });
+}
+
+// ─── Market / P2P Listings ───────────────────────────────────────────────────
+
+export function useListings() {
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  return useQuery<Listing[]>({
+    queryKey: ["listings"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getListings();
+    },
+    enabled: !!actor && !isFetching && !!identity,
+    refetchInterval: 15000,
+  });
+}
+
+export function useMyListings() {
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  return useQuery<Listing[]>({
+    queryKey: ["myListings"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getMyListings();
+    },
+    enabled: !!actor && !isFetching && !!identity,
+    refetchInterval: 15000,
+  });
+}
+
+export function useCreateListing() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      amount,
+      priceICP,
+    }: {
+      amount: bigint;
+      priceICP: number;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.createListing(amount, priceICP);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["myListings"] });
+      queryClient.invalidateQueries({ queryKey: ["callerBalance"] });
+    },
+  });
+}
+
+export function useInitiatePurchase() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (listingId: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.initiatePurchase(listingId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["myListings"] });
+    },
+  });
+}
+
+export function useConfirmSale() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (listingId: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.confirmSale(listingId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["myListings"] });
+      queryClient.invalidateQueries({ queryKey: ["callerBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["topHolders"] });
+    },
+  });
+}
+
+export function useCancelListing() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (listingId: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.cancelListing(listingId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["myListings"] });
+      queryClient.invalidateQueries({ queryKey: ["callerBalance"] });
+    },
+  });
+}
+
+export function useAdminResolve() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      listingId,
+      releaseToBuyer,
+    }: {
+      listingId: bigint;
+      releaseToBuyer: boolean;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.adminResolve(listingId, releaseToBuyer);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["myListings"] });
+      queryClient.invalidateQueries({ queryKey: ["callerBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["topHolders"] });
+    },
   });
 }
