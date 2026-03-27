@@ -10,22 +10,30 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { loadConfig } from "../config";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
-const CANISTER_ID =
-  (import.meta as any).env?.VITE_BACKEND_CANISTER_ID ||
-  (import.meta as any).env?.CANISTER_ID_BACKEND ||
-  "";
+function useCanisterId() {
+  const [canisterId, setCanisterId] = useState("");
+  useEffect(() => {
+    loadConfig()
+      .then((cfg) => {
+        if (cfg.backend_canister_id) setCanisterId(cfg.backend_canister_id);
+      })
+      .catch(() => {});
+  }, []);
+  return canisterId;
+}
 
-function CanisterIdBadge() {
+function CanisterIdBadge({ canisterId }: { canisterId: string }) {
   const [copied, setCopied] = useState(false);
-  if (!CANISTER_ID) return null;
+  if (!canisterId) return null;
 
-  const short = `${CANISTER_ID.slice(0, 5)}...${CANISTER_ID.slice(-3)}`;
+  const short = `${canisterId.slice(0, 5)}...${canisterId.slice(-3)}`;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(CANISTER_ID).then(() => {
+    navigator.clipboard.writeText(canisterId).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -35,7 +43,7 @@ function CanisterIdBadge() {
     <button
       type="button"
       onClick={handleCopy}
-      title={`Canister ID: ${CANISTER_ID} (click to copy)`}
+      title={`Canister ID: ${canisterId} (click to copy)`}
       className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-neon-cyan/30 bg-neon-cyan/5 hover:bg-neon-cyan/15 hover:border-neon-cyan/60 transition-all text-neon-cyan"
     >
       <span className="text-[10px] font-mono leading-none">{short}</span>
@@ -43,6 +51,32 @@ function CanisterIdBadge() {
         <Check className="w-3 h-3 text-neon-green" />
       ) : (
         <Copy className="w-3 h-3" />
+      )}
+    </button>
+  );
+}
+
+function MobileCanisterIdBadge({ canisterId }: { canisterId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(canisterId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-neon-cyan/30 bg-neon-cyan/5 hover:bg-neon-cyan/10 transition-all text-neon-cyan w-full"
+    >
+      <span className="text-xs font-mono truncate">{canisterId}</span>
+      {copied ? (
+        <Check className="w-3.5 h-3.5 text-neon-green flex-shrink-0" />
+      ) : (
+        <Copy className="w-3.5 h-3.5 flex-shrink-0" />
       )}
     </button>
   );
@@ -68,6 +102,7 @@ export default function Navbar({
   const { actor } = useActor();
   const isLoggedIn = !!identity && !identity.getPrincipal().isAnonymous();
   const registeredRef = useRef(false);
+  const canisterId = useCanisterId();
 
   useEffect(() => {
     if (isLoggedIn && actor && !registeredRef.current) {
@@ -110,7 +145,7 @@ export default function Navbar({
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            <CanisterIdBadge />
+            <CanisterIdBadge canisterId={canisterId} />
             <Button
               variant="outline"
               size="sm"
@@ -216,7 +251,7 @@ export default function Navbar({
               </a>
             ))}
             <div className="flex flex-col gap-2 px-4 pt-2">
-              {CANISTER_ID && <MobileCanisterIdBadge />}
+              {canisterId && <MobileCanisterIdBadge canisterId={canisterId} />}
               <Button
                 variant="outline"
                 size="sm"
@@ -297,31 +332,5 @@ export default function Navbar({
         )}
       </div>
     </nav>
-  );
-}
-
-function MobileCanisterIdBadge() {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(CANISTER_ID).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-neon-cyan/30 bg-neon-cyan/5 hover:bg-neon-cyan/10 transition-all text-neon-cyan w-full"
-    >
-      <span className="text-xs font-mono truncate">{CANISTER_ID}</span>
-      {copied ? (
-        <Check className="w-3.5 h-3.5 text-neon-green flex-shrink-0" />
-      ) : (
-        <Copy className="w-3.5 h-3.5 flex-shrink-0" />
-      )}
-    </button>
   );
 }

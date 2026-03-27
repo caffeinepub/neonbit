@@ -1,12 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Check, Copy, ExternalLink, Info } from "lucide-react";
-import { useState } from "react";
-
-// The backend canister ID is injected at build time via Vite env
-const CANISTER_ID =
-  (import.meta as any).env?.VITE_BACKEND_CANISTER_ID ||
-  (import.meta as any).env?.CANISTER_ID_BACKEND ||
-  "Check Caffeine Dashboard";
+import { useEffect, useState } from "react";
+import { loadConfig } from "../config";
 
 const TOKEN_DETAILS = [
   { label: "Token Name", value: "@dr" },
@@ -53,6 +48,18 @@ function CopyField({ label, value }: { label: string; value: string }) {
 }
 
 export default function TokenInfo() {
+  const [canisterId, setCanisterId] = useState("Loading...");
+
+  useEffect(() => {
+    loadConfig()
+      .then((cfg) => {
+        setCanisterId(cfg.backend_canister_id || "Check Caffeine Dashboard");
+      })
+      .catch(() => {
+        setCanisterId("Check Caffeine Dashboard");
+      });
+  }, []);
+
   return (
     <section
       className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
@@ -72,10 +79,7 @@ export default function TokenInfo() {
             <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
             <h3 className="font-bold text-foreground">Token Canister ID</h3>
           </div>
-          <CopyField
-            label="Canister ID (for DEX listing)"
-            value={CANISTER_ID}
-          />
+          <CopyField label="Canister ID (for DEX listing)" value={canisterId} />
           <p className="text-xs text-muted-foreground leading-relaxed">
             Use this Canister ID to import @dr token on ICPSwap or Sonic DEX for
             real money trading.
