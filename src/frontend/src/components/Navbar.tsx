@@ -110,6 +110,7 @@ export default function Navbar({
           </div>
 
           <div className="hidden md:flex items-center gap-2">
+            <CanisterIdBadge />
             <Button
               variant="outline"
               size="sm"
@@ -143,19 +144,16 @@ export default function Navbar({
               </Button>
             )}
             {isLoggedIn && (
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onAdminClick}
-                  className="border-border/60 text-muted-foreground hover:bg-secondary/50 rounded-full px-4 gap-1.5"
-                  data-ocid="nav.open_modal_button"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  Control Panel
-                </Button>
-                <CanisterIdBadge />
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onAdminClick}
+                className="border-border/60 text-muted-foreground hover:bg-secondary/50 rounded-full px-4 gap-1.5"
+                data-ocid="nav.open_modal_button"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Control Panel
+              </Button>
             )}
             {isLoggedIn ? (
               <Button
@@ -218,6 +216,7 @@ export default function Navbar({
               </a>
             ))}
             <div className="flex flex-col gap-2 px-4 pt-2">
+              {CANISTER_ID && <MobileCanisterIdBadge />}
               <Button
                 variant="outline"
                 size="sm"
@@ -260,22 +259,19 @@ export default function Navbar({
                 </Button>
               )}
               {isLoggedIn && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      onAdminClick?.();
-                      setMobileOpen(false);
-                    }}
-                    className="border-border/60 text-muted-foreground hover:bg-secondary/50 rounded-full gap-1.5"
-                    data-ocid="nav.open_modal_button"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    Control Panel
-                  </Button>
-                  {CANISTER_ID && <MobileCanisterIdBadge />}
-                </>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onAdminClick?.();
+                    setMobileOpen(false);
+                  }}
+                  className="border-border/60 text-muted-foreground hover:bg-secondary/50 rounded-full gap-1.5"
+                  data-ocid="nav.open_modal_button"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  Control Panel
+                </Button>
               )}
               <div className="flex gap-2">
                 <Button
